@@ -17,8 +17,9 @@ async function login(base: string): Promise<string> {
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ email: "admin", password: "123456" }),
   });
-  assert.equal(response.status, 200, await response.text());
-  const body = (await response.json()) as { token?: string };
+  const raw = await response.text();
+  assert.equal(response.status, 200, raw);
+  const body = JSON.parse(raw) as { token?: string };
   assert.ok(body.token, "login must return a token");
   return body.token;
 }
@@ -142,8 +143,9 @@ async function main(): Promise<void> {
         source: "web",
       }),
     });
-    assert.equal(created.status, 201, await created.text());
-    const run = (await created.json()) as { id: string; status: string; errorMessage: string | null };
+    const createdRaw = await created.text();
+    assert.equal(created.status, 201, createdRaw);
+    const run = JSON.parse(createdRaw) as { id: string; status: string; errorMessage: string | null };
     runId = run.id;
     assert.equal(run.status, "RUNNING", run.errorMessage ?? "");
 
@@ -162,7 +164,8 @@ async function main(): Promise<void> {
       headers: authHeaders(token),
       body: JSON.stringify({ text: "第二轮：只回复一个词 ok。不要调用工具。" }),
     });
-    assert.equal(follow.status, 201, await follow.text());
+    const followRaw = await follow.text();
+    assert.equal(follow.status, 201, followRaw);
     const second = await waitForIdle(apiBase, token, run.id, 2, 60_000);
     assert.notEqual(second.status, "ERROR", second.errorMessage ?? second.kinds.join(","));
     assert.equal(second.status, "IDLE");

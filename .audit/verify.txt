@@ -1,0 +1,10 @@
+node=v22.23.2
+pnpm=10.33.3
+install=ok
+typecheck=ok
+dev_health=control-plane local mock
+gateway_health=llm-gateway mock
+web_ui=200
+live_smoke=smoke ok run=30a5e658-3ba2-4256-8206-918510129082 events=23+ follow-up idle
+in_process_smoke=smoke ok run=9a8c5ab2-573e-44e9-ab63-57fd5d6bf2c9 events=23+ follow-up idle
+desks=401
