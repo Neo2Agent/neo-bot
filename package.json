@@ -1,0 +1,29 @@
+{
+  "name": "neo-bot",
+  "private": true,
+  "description": "Web v1 delivery repo: control plane, LLM gateway, local worker, and chat UI.",
+  "packageManager": "pnpm@10.33.3",
+  "engines": {
+    "node": ">=22.19"
+  },
+  "scripts": {
+    "dev": "pnpm --parallel --filter @neo-bot/control-plane --filter @neo-bot/llm-gateway dev",
+    "dev:control-plane": "pnpm --filter @neo-bot/control-plane dev",
+    "dev:gateway": "pnpm --filter @neo-bot/llm-gateway dev",
+    "dev:worker": "pnpm --filter @neo-bot/worker dev",
+    "dev:web": "tsx scripts/dev-web.ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit && pnpm --filter @neo-bot/ui --config.engine-strict=false typecheck && pnpm --filter @neo-bot/web --config.engine-strict=false typecheck",
+    "build:web": "pnpm --filter @neo-bot/web --config.engine-strict=false build",
+    "smoke:web": "tsx scripts/smoke-web-v1.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^22.17.0",
+    "tsx": "^4.20.5",
+    "typescript": "^5.9.2"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild"
+    ]
+  }
+}

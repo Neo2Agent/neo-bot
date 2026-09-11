@@ -1,0 +1,101 @@
+import { Select } from "@neo-bot/ui";
+import type { Desk } from "@neo-bot/contracts/desk";
+import type { DeskTarget } from "../desk";
+
+type Props = {
+  target: DeskTarget;
+  canRunLocal: boolean;
+  folder?: string;
+  /** Machines that registered themselves and still hold a connection. */
+  desks?: Desk[];
+  /** An open Remote Control run cannot change where it executes. */
+  locked?: boolean;
+  lockLabel?: string;
+  onTarget: (target: DeskTarget) => void;
+  onPickFolder?: () => void;
+};
+
+type MachineOption = { deskId: string; workspaceId: string; label: string };
+
+/** Only a connected machine that allows remote work can take a run. */
+function machineOptions(desks: Desk[]): MachineOption[] {
+  const out: MachineOption[] = [];
+  for (const desk of desks) {
+    if (!desk.online || desk.allowRemote !== true) {
+      continue;
+    }
+    for (const workspace of desk.workspaces ?? []) {
+      out.push({ deskId: desk.id, workspaceId: workspace.id, label: `${desk.name} · ${workspace.name}` });
+    }
+  }
+  return out;
+}
+
+export function TargetPicker({
+  target,
+  canRunLocal,
+  folder,
+  desks = [],
+  locked = false,
+  lockLabel = "Remote Control",
+  onTarget,
+  onPickFolder,
+}: Props) {
+  const machines = machineOptions(desks);
+  const local = target.kind === "desk";
+  const insideDesk = canRunLocal;
+  const canGoLocal = insideDesk || machines.length > 0;
+  if (locked) {
+    return (
+      <div className="picker">
+        <Select
+          id="execution-target"
+          size="pill"
+          aria-label="目标"
+          disabled
+          value="locked"
+          onValueChange={() => undefined}
+          options={[{ value: "locked", label: lockLabel }]}
+        />
+      </div>
+    );
+  }
+  return (
+    <div className="picker">
+      <Select
+        id="execution-target"
+        size="pill"
+        aria-label="目标"
+        value={target.kind}
+        onValueChange={(next) => {
+          const kind = next as DeskTarget["kind"];
+          if (kind === "desk" && !canGoLocal) return;
+          onTarget({ ...target, kind });
+        }}
+        options={[
+          { value: "cloud", label: "云端" },
+        ]}
+      />
+      {local && insideDesk ? (
+        <button type="button" className="ghost picker-extra" onClick={onPickFolder}>
+          {folder || "选择文件夹…"}
+        </button>
+      ) : null}
+      {local && !insideDesk ? (
+        <Select
+          className="picker-extra"
+          size="pill"
+          aria-label="选择一台电脑"
+          placeholder="选择一台电脑…"
+          value={target.workspaceId ?? ""}
+          onValueChange={(next) => {
+            const picked = machines.find((item) => item.workspaceId === next);
+            if (!picked) return;
+            onTarget({ ...target, kind: "desk", deskId: picked.deskId, workspaceId: picked.workspaceId });
+          }}
+          options={machines.map((item) => ({ value: item.workspaceId, label: item.label }))}
+        />
+      ) : null}
+    </div>
+  );
+}

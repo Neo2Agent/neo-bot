@@ -1,0 +1,8 @@
+ts	phase	decision	why	evidence	result
+2026-09-11T17:30:27Z	frame	Migrate only the Web v1 cut from neo-cloud-agent@e54dc82. Done when install, typecheck, pnpm dev, pnpm dev:web, and a mock login/run/SSE/follow-up all pass.	Smallest cut that boots. Architect shape was already approved.	/tmp/neo-cloud-agent-src HEAD e54dc82	framed
+2026-09-11T17:30:27Z	frame	Keep packages/extensions even though it is not in the source table.	Worker imports it. Without it typecheck and local Runs fail.	packages/worker/package.json workspace dep	include extensions
+2026-09-11T17:30:27Z	frame	Delete public /v1/desks /v1/devices /v1/automations and admin overview. Keep desks/store internals used by the orchestrator.	Rewriting orchestrator desk branches would risk the cloud Run path. Public APIs must not hang.	packages/control-plane/src/orchestrator/orchestrator.ts imports desks/store	pending strip
+2026-09-11T17:30:27Z	frame	Skip architect/arena.	The package list and delete list are already approved. A second design pass is extra work.	user query Architect boundary	skipped
+2026-09-11T17:36:00Z	copy	Copied the listed packages plus extensions, scripts, fixtures, and trimmed root files. Renamed @neo-cloud-agent/* to @neo-bot/*.	Worker cannot typecheck without extensions.	/tmp/bootstrap-neo-bot.py	copied
+2026-09-11T17:36:00Z	strip	Removed public /v1/desks /v1/devices /v1/automations and admin/. Kept desks/store for the orchestrator.	Public APIs must not hang. Rewriting orchestrator desk branches would risk local Runs.	packages/control-plane/src/api/server.ts	stripped
+2026-09-11T17:36:00Z	web	Hid Desk and automations UI behind WEB_V1 flags. Target picker is cloud only.	v1 chat must work without Desk.	packages/web/src/scope.ts	gated
