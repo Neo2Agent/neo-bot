@@ -20,8 +20,8 @@ neo-bot is the Web delivery repo. A browser talks to `/v1`. The control plane ow
 3. The worker asks the gateway for model tokens. The browser never sees a provider key.
 4. The worker posts `RunEvent`s. The control plane fans them out on `GET /v1/runs/:id/events` as SSE.
 5. The UI loads a transcript snapshot, then follows the live stream.
-6. A follow-up is `POST /v1/runs/:id/follow-up`. The same Run stays IDLE between turns.
-7. Artifacts stay on `GET /v1/runs/:id/artifacts`.
+6. A follow-up is `POST /v1/runs/:id/follow-ups`. The same Run stays IDLE between turns.
+7. Artifacts stay on `GET /v1/runs/:id/artifacts`. A mock pong Run may return an empty list.
 
 ```mermaid
 flowchart LR

@@ -24,6 +24,12 @@ async function login(base: string): Promise<string> {
   return body.token;
 }
 
+async function assertGone(base: string, token: string, path: string): Promise<void> {
+  const response = await fetch(`${base}${path}`, { headers: authHeaders(token) });
+  const raw = await response.text();
+  assert.equal(response.status, 404, `${path} ${response.status} ${raw}`);
+}
+
 async function waitForIdle(base: string, token: string, runId: string, minEnds: number, timeoutMs: number) {
   const deadline = Date.now() + timeoutMs;
   let kinds: string[] = [];
@@ -131,6 +137,9 @@ async function main(): Promise<void> {
   }
 
   assert.ok(apiBase);
+  await assertGone(apiBase, token, "/v1/desks");
+  await assertGone(apiBase, token, "/v1/devices");
+  await assertGone(apiBase, token, "/v1/automations");
   let runId = "";
   let live: ReturnType<typeof attachSse> | undefined;
   try {

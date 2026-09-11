@@ -1,6 +1,6 @@
 # neo-bot Web v1 scope
 
-This file is the locked in and out list for the first Web delivery cut. Desk, Mobile, admin, and Firecracker stay out.
+This file is the locked in and out list for the first Web delivery cut. Desk, Mobile, admin, and Firecracker stay out. The source cut is neo-cloud-agent@e54dc82.
 
 ## In
 
@@ -9,7 +9,7 @@ This file is the locked in and out list for the first Web delivery cut. Desk, Mo
 - Root workspace files that `pnpm dev` and `pnpm dev:web` need.
 - `scripts/dev-web.ts`, `scripts/ensure-backend.ts`, and `scripts/spawn-pnpm.ts`.
 - `fixtures/toy-repo` for a local Run smoke.
-- Web chat: login, create a Run, subscribe to SSE, send a follow-up, show artifacts.
+- Web chat: login, create a Run, subscribe to SSE, and send a follow-up. Artifact routes stay. A mock pong Run may have none.
 - Default `WORKER_RUNTIME=local`. Provider keys stay in `llm-gateway` only.
 
 ## Out
