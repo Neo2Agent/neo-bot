@@ -40,6 +40,12 @@ function envUrl(value: string | undefined, fallback: string): string {
   return (trimmed || fallback).replace(/\/$/, "");
 }
 
+/** Relative RUNS_DIR must not follow `pnpm --filter` cwd or the worker misses files. */
+function envDir(value: string | undefined, fallback: string): string {
+  const raw = value?.trim() || fallback;
+  return path.isAbsolute(raw) ? raw : path.resolve(repoRoot(), raw);
+}
+
 export function getConfig() {
   const kind = workerRuntimeKind();
   const port = Number(process.env.CONTROL_PLANE_PORT ?? 8080);
@@ -48,7 +54,7 @@ export function getConfig() {
     process.env.CONTROL_PLANE_URL ?? `http://127.0.0.1:${port}`
   ).replace(/\/$/, "");
   const llmGatewayUrl = (process.env.LLM_GATEWAY_URL ?? `http://127.0.0.1:${gatewayPort}`).replace(/\/$/, "");
-  const runsDir = process.env.RUNS_DIR ?? path.join(repoRoot(), ".neo/runs");
+  const runsDir = envDir(process.env.RUNS_DIR, path.join(repoRoot(), ".neo/runs"));
   return {
     port,
     orgId: process.env.DEFAULT_ORG_ID ?? "org_local",
@@ -62,7 +68,7 @@ export function getConfig() {
     workerRuntime: kind,
     spawnLocalWorker: kind === "local" || kind === "vm",
     runsDir,
-    hostRunsDir: process.env.HOST_RUNS_DIR ?? runsDir,
+    hostRunsDir: envDir(process.env.HOST_RUNS_DIR, runsDir),
     workerWorkspaceMount: process.env.WORKER_WORKSPACE_MOUNT ?? "/workspace",
     workerControlPlaneUrl: envUrl(
       process.env.WORKER_CONTROL_PLANE_URL,
