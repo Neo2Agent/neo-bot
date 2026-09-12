@@ -114,6 +114,60 @@ test("mock emits an edit tool call when the prompt asks to touch files", () => {
   assert.match(sse, /"finish_reason":"tool_calls"/);
 });
 
+test("mock writes and uploads an artifact after the first file tool", () => {
+  const tools = [
+    { type: "function", function: { name: "edit" } },
+    { type: "function", function: { name: "write" } },
+    { type: "function", function: { name: "neo_artifact_upload" } },
+  ];
+  const write = pickMockToolCall({
+    messages: [{ role: "user", content: "生成一个产物文件，并上传到 Artifacts。" }],
+    tools,
+  });
+  assert.equal(write?.name, "write");
+  assert.equal((write?.args as { path?: string }).path, "ARTIFACT.md");
+
+  const upload = pickMockToolCall({
+    messages: [
+      { role: "user", content: "Edit hello.txt and add a tools line." },
+      {
+        role: "assistant",
+        tool_calls: [
+          {
+            id: "call_1",
+            type: "function",
+            function: { name: "edit", arguments: JSON.stringify({ path: "hello.txt" }) },
+          },
+        ],
+      },
+      { role: "tool", tool_call_id: "call_1", content: "ok" },
+    ],
+    tools,
+  });
+  assert.equal(upload?.name, "neo_artifact_upload");
+  assert.equal((upload?.args as { path?: string }).path, "hello.txt");
+
+  assert.equal(
+    pickMockToolCall({
+      messages: [
+        { role: "user", content: "Edit hello.txt" },
+        { role: "tool", tool_call_id: "call_1", content: "ok" },
+        { role: "assistant", tool_calls: [{ function: { name: "neo_artifact_upload" } }] },
+        { role: "tool", tool_call_id: "call_2", content: "uploaded" },
+      ],
+      tools,
+    }),
+    null,
+  );
+  assert.equal(
+    pickMockToolCall({
+      messages: [{ role: "user", content: "只回复一个词 pong。不要调用工具。" }],
+      tools,
+    }),
+    null,
+  );
+});
+
 test("gateway requires a run JWT and can forward to an OpenAI-compatible upstream", async () => {
   const isolated = mkdtempSync(path.join(tmpdir(), "neo-gw-mock-"));
   process.env.LLM_SETTINGS_DIR = isolated;

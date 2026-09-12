@@ -102,9 +102,13 @@ export type MockToolCall = { name: string; args: Record<string, unknown> };
 const REFUSE_TOOLS =
   /不要调用工具|不要修改文件|只阅读和回答|do not (use|call) tools|don't (use|call) tools|only (read|reply)/i;
 const WANT_FILE_TOOLS =
-  /\b(write|edit|read|bash|grep|diff|file|path|touch)\b|hello\.txt|readme|文件|编辑|改|添加|修改|更新|工具/i;
+  /\b(write|edit|read|bash|grep|diff|file|path|touch|artifact|upload)\b|hello\.txt|readme|文件|编辑|改|添加|修改|更新|工具|产物|附件/i;
+const WANT_ARTIFACTS = /artifact|产物|附件|upload/i;
+const MOCK_FILE_TOOLS = new Set(["write", "edit"]);
 
 const TOY_HELLO = "hello from the toy repo";
+const MOCK_ARTIFACT_PATH = "ARTIFACT.md";
+const MOCK_ARTIFACT_CONTENT = "Mock artifact so the Web Artifacts tab has a real file to open.\n";
 
 function asRecord(value: unknown): Record<string, unknown> | null {
   return value && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : null;
@@ -185,15 +189,107 @@ export function lastMessageIsToolResult(messages?: unknown[]): boolean {
   return isToolResultMessage(messages.at(-1));
 }
 
+function toolResultCount(messages?: unknown[]): number {
+  if (!Array.isArray(messages)) {
+    return 0;
+  }
+  return messages.filter(isToolResultMessage).length;
+}
+
+function parseToolArgs(raw: unknown): Record<string, unknown> {
+  if (typeof raw === "string") {
+    try {
+      return asRecord(JSON.parse(raw)) ?? {};
+    } catch {
+      return {};
+    }
+  }
+  return asRecord(raw) ?? {};
+}
+
+function assistantToolCalls(messages?: unknown[]): Array<{ name: string; args: Record<string, unknown> }> {
+  if (!Array.isArray(messages)) {
+    return [];
+  }
+  const calls: Array<{ name: string; args: Record<string, unknown> }> = [];
+  for (const message of messages) {
+    const record = asRecord(message);
+    if (!record) {
+      continue;
+    }
+    const rawCalls = record.tool_calls ?? record.function_call;
+    const list = Array.isArray(rawCalls) ? rawCalls : rawCalls ? [rawCalls] : [];
+    for (const item of list) {
+      const entry = asRecord(item);
+      if (!entry) {
+        continue;
+      }
+      const fn = asRecord(entry.function);
+      const name =
+        (typeof entry.name === "string" && entry.name) || (typeof fn?.name === "string" && fn.name) || "";
+      if (!name) {
+        continue;
+      }
+      calls.push({ name, args: parseToolArgs(entry.arguments ?? fn?.arguments ?? entry.args) });
+    }
+  }
+  return calls;
+}
+
+function lastWrittenPath(body: ChatCompletionBody): string {
+  const calls = assistantToolCalls(body.messages);
+  for (let index = calls.length - 1; index >= 0; index -= 1) {
+    const call = calls[index];
+    if (!call || !MOCK_FILE_TOOLS.has(call.name)) {
+      continue;
+    }
+    if (typeof call.args.path === "string" && call.args.path.trim()) {
+      return call.args.path.trim();
+    }
+  }
+  const names = listedToolNames(body);
+  if (names.includes("write") && !names.includes("edit")) {
+    return "TOOLS.md";
+  }
+  return "hello.txt";
+}
+
+function pickMockArtifactUpload(body: ChatCompletionBody): MockToolCall | null {
+  if (toolResultCount(body.messages) !== 1) {
+    return null;
+  }
+  const names = listedToolNames(body);
+  if (!names.includes("neo_artifact_upload")) {
+    return null;
+  }
+  const text = lastUserText(body.messages);
+  if (text && REFUSE_TOOLS.test(text)) {
+    return null;
+  }
+  return {
+    name: "neo_artifact_upload",
+    args: { path: lastWrittenPath(body) },
+  };
+}
+
 export function pickMockToolCall(body: ChatCompletionBody): MockToolCall | null {
   if (lastMessageIsToolResult(body.messages)) {
-    return null;
+    return pickMockArtifactUpload(body);
   }
   const text = lastUserText(body.messages);
   if (!text || REFUSE_TOOLS.test(text) || !WANT_FILE_TOOLS.test(text)) {
     return null;
   }
   const names = listedToolNames(body);
+  if (WANT_ARTIFACTS.test(text) && names.includes("write")) {
+    return {
+      name: "write",
+      args: {
+        path: MOCK_ARTIFACT_PATH,
+        content: MOCK_ARTIFACT_CONTENT,
+      },
+    };
+  }
   if (names.includes("edit")) {
     return {
       name: "edit",
@@ -290,7 +386,7 @@ const MOCK_TEXT =
   "Mock gateway response. Save a DeepSeek or OpenAI API key on the chat page, or set DEEPSEEK_API_KEY / OPENAI_API_KEY.";
 
 const MOCK_TOOL_FOLLOWUP_TEXT =
-  "Mock gateway finished the file tool. The transcript should show the tool card and a diff.";
+  "Mock gateway finished the file tool and uploaded it. Open the Artifacts tab to download the file.";
 
 const MOCK_SLOW_TEXT =
   "这是一段故意拉长的 mock 流式回复，方便两台 Desk 同时订同一条 SSE。你会一个字一个字看到输出。在这段还没结束时，另一位协作者可以发跟进；消息会进 FIFO 队列，不会再开第二个 worker。";
