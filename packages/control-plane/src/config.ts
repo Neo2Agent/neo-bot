@@ -34,6 +34,12 @@ export function defaultWorkerResources(kind = workerRuntimeKind()): { cpu: numbe
   };
 }
 
+/** Treat blank env the same as unset so `KEY=` is not a configured URL. */
+function envUrl(value: string | undefined, fallback: string): string {
+  const trimmed = value?.trim();
+  return (trimmed || fallback).replace(/\/$/, "");
+}
+
 export function getConfig() {
   const kind = workerRuntimeKind();
   const port = Number(process.env.CONTROL_PLANE_PORT ?? 8080);
@@ -58,14 +64,14 @@ export function getConfig() {
     runsDir,
     hostRunsDir: process.env.HOST_RUNS_DIR ?? runsDir,
     workerWorkspaceMount: process.env.WORKER_WORKSPACE_MOUNT ?? "/workspace",
-    workerControlPlaneUrl: (
-      process.env.WORKER_CONTROL_PLANE_URL ??
-      (kind === "docker" ? `http://host.docker.internal:${port}` : controlPlaneUrl)
-    ).replace(/\/$/, ""),
-    workerLlmGatewayUrl: (
-      process.env.WORKER_LLM_GATEWAY_URL ??
-      (kind === "docker" ? `http://host.docker.internal:${gatewayPort}` : llmGatewayUrl)
-    ).replace(/\/$/, ""),
+    workerControlPlaneUrl: envUrl(
+      process.env.WORKER_CONTROL_PLANE_URL,
+      kind === "docker" ? `http://host.docker.internal:${port}` : controlPlaneUrl,
+    ),
+    workerLlmGatewayUrl: envUrl(
+      process.env.WORKER_LLM_GATEWAY_URL,
+      kind === "docker" ? `http://host.docker.internal:${gatewayPort}` : llmGatewayUrl,
+    ),
     dockerNetwork: process.env.DOCKER_NETWORK || null,
     agentKernel: resolveAgentKernel(undefined, process.env),
     neoLoopUrl: (process.env.NEO_LOOP_URL ?? "http://127.0.0.1:8082").replace(/\/$/, ""),
