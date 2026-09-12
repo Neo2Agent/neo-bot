@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import path from "node:path";
 import test from "node:test";
 import { getConfig } from "./config.js";
 
@@ -10,6 +11,8 @@ const KEYS = [
   "CONTROL_PLANE_PORT",
   "LLM_GATEWAY_URL",
   "LLM_GATEWAY_PORT",
+  "RUNS_DIR",
+  "HOST_RUNS_DIR",
 ] as const;
 
 function withEnv(overrides: Partial<Record<(typeof KEYS)[number], string | undefined>>, fn: () => void): void {
@@ -66,6 +69,15 @@ test("explicit WORKER_*_URL wins when non-empty", () => {
       assert.equal(config.workerLlmGatewayUrl, "http://worker-llm.example:8081");
     },
   );
+});
+
+test("relative RUNS_DIR and blank HOST_RUNS_DIR resolve to the repo root", () => {
+  withEnv({ RUNS_DIR: ".neo/runs", HOST_RUNS_DIR: "" }, () => {
+    const config = getConfig();
+    assert.equal(config.runsDir.endsWith("/.neo/runs"), true);
+    assert.ok(path.isAbsolute(config.runsDir), config.runsDir);
+    assert.equal(config.hostRunsDir, config.runsDir);
+  });
 });
 
 test("blank WORKER_*_URL uses docker host defaults, not an empty remote", () => {

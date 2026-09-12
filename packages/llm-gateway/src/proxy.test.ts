@@ -5,7 +5,15 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import test from "node:test";
 import { mintRunToken } from "@neo-bot/contracts";
-import { buildMockSse, capUpstreamMaxTokens, explainUpstreamChatError, rewriteBody } from "./proxy.js";
+import {
+  buildMockSse,
+  buildMockToolSse,
+  capUpstreamMaxTokens,
+  explainUpstreamChatError,
+  lastMessageIsToolResult,
+  pickMockToolCall,
+  rewriteBody,
+} from "./proxy.js";
 import { messagesHaveImages, resolveUpstreamModel } from "./routes.js";
 import { createGatewayServer } from "./server.js";
 
@@ -80,6 +88,32 @@ test("mock SSE is OpenAI-compatible", () => {
   assert.match(sse, /data: \[DONE\]/);
 });
 
+test("mock emits an edit tool call when the prompt asks to touch files", () => {
+  const tools = [{ type: "function", function: { name: "edit" } }, { type: "function", function: { name: "write" } }];
+  const call = pickMockToolCall({
+    messages: [{ role: "user", content: "Edit hello.txt and add a tools line." }],
+    tools,
+  });
+  assert.equal(call?.name, "edit");
+  assert.equal((call?.args as { path?: string }).path, "hello.txt");
+  assert.equal(pickMockToolCall({ messages: [{ role: "user", content: "只回复一个词 pong。不要调用工具。" }], tools }), null);
+  assert.equal(pickMockToolCall({ messages: [{ role: "user", content: "hi" }], tools }), null);
+  assert.equal(
+    pickMockToolCall({
+      messages: [
+        { role: "user", content: "Edit hello.txt" },
+        { role: "tool", tool_call_id: "call_1", content: "ok" },
+      ],
+      tools,
+    }),
+    null,
+  );
+  assert.equal(lastMessageIsToolResult([{ role: "tool", content: "ok" }]), true);
+  const sse = buildMockToolSse("gpt-4o-mini", call!);
+  assert.match(sse, /"tool_calls"/);
+  assert.match(sse, /"finish_reason":"tool_calls"/);
+});
+
 test("gateway requires a run JWT and can forward to an OpenAI-compatible upstream", async () => {
   const isolated = mkdtempSync(path.join(tmpdir(), "neo-gw-mock-"));
   process.env.LLM_SETTINGS_DIR = isolated;
@@ -123,6 +157,25 @@ test("gateway requires a run JWT and can forward to an OpenAI-compatible upstrea
     assert.equal(ok.status, 200);
     const body = (await ok.json()) as { choices: Array<{ message: { content: string } }> };
     assert.match(body.choices[0]?.message.content ?? "", /Mock gateway/);
+
+    const tools = await fetch(url, {
+      method: "POST",
+      headers: {
+        authorization: `Bearer ${token}`,
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "neo/sonnet",
+        messages: [{ role: "user", content: "Edit hello.txt so the transcript shows a diff." }],
+        tools: [{ type: "function", function: { name: "edit" } }],
+      }),
+    });
+    assert.equal(tools.status, 200);
+    const toolBody = (await tools.json()) as {
+      choices: Array<{ finish_reason?: string; message?: { tool_calls?: Array<{ function?: { name?: string } }> } }>;
+    };
+    assert.equal(toolBody.choices[0]?.finish_reason, "tool_calls");
+    assert.equal(toolBody.choices[0]?.message?.tool_calls?.[0]?.function?.name, "edit");
   } finally {
     await new Promise<void>((resolve, reject) => server.close((error) => (error ? reject(error) : resolve())));
   }

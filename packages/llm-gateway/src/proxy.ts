@@ -97,8 +97,200 @@ export function buildMockCompletion(model: string, text: string) {
   };
 }
 
+export type MockToolCall = { name: string; args: Record<string, unknown> };
+
+const REFUSE_TOOLS =
+  /不要调用工具|不要修改文件|只阅读和回答|do not (use|call) tools|don't (use|call) tools|only (read|reply)/i;
+const WANT_FILE_TOOLS =
+  /\b(write|edit|read|bash|grep|diff|file|path|touch)\b|hello\.txt|readme|文件|编辑|改|添加|修改|更新|工具/i;
+
+const TOY_HELLO = "hello from the toy repo";
+
+function asRecord(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : null;
+}
+
+function collectMessageText(content: unknown): string {
+  if (typeof content === "string") {
+    return content;
+  }
+  if (!Array.isArray(content)) {
+    return "";
+  }
+  return content
+    .map((part) => {
+      if (typeof part === "string") {
+        return part;
+      }
+      const record = asRecord(part);
+      if (typeof record?.text === "string") {
+        return record.text;
+      }
+      if (typeof record?.content === "string") {
+        return record.content;
+      }
+      return "";
+    })
+    .join("");
+}
+
+function isToolResultMessage(value: unknown): boolean {
+  const record = asRecord(value);
+  if (!record) {
+    return false;
+  }
+  if (record.role === "tool" || record.role === "function") {
+    return true;
+  }
+  return typeof record.tool_call_id === "string" && Boolean(record.tool_call_id);
+}
+
+export function listedToolNames(body: ChatCompletionBody): string[] {
+  const names = new Set<string>();
+  const add = (value: unknown) => {
+    if (typeof value === "string" && value.trim()) {
+      names.add(value.trim());
+    }
+  };
+  if (Array.isArray(body.tools)) {
+    for (const tool of body.tools) {
+      const record = asRecord(tool);
+      if (!record) {
+        continue;
+      }
+      add(record.name);
+      add(asRecord(record.function)?.name);
+    }
+  }
+  return [...names];
+}
+
+export function lastUserText(messages?: unknown[]): string {
+  if (!Array.isArray(messages)) {
+    return "";
+  }
+  for (let index = messages.length - 1; index >= 0; index -= 1) {
+    const record = asRecord(messages[index]);
+    if (record?.role === "user") {
+      return collectMessageText(record.content);
+    }
+  }
+  return "";
+}
+
+export function lastMessageIsToolResult(messages?: unknown[]): boolean {
+  if (!Array.isArray(messages) || messages.length === 0) {
+    return false;
+  }
+  return isToolResultMessage(messages.at(-1));
+}
+
+export function pickMockToolCall(body: ChatCompletionBody): MockToolCall | null {
+  if (lastMessageIsToolResult(body.messages)) {
+    return null;
+  }
+  const text = lastUserText(body.messages);
+  if (!text || REFUSE_TOOLS.test(text) || !WANT_FILE_TOOLS.test(text)) {
+    return null;
+  }
+  const names = listedToolNames(body);
+  if (names.includes("edit")) {
+    return {
+      name: "edit",
+      args: {
+        path: "hello.txt",
+        edits: [
+          {
+            oldText: TOY_HELLO,
+            newText: `${TOY_HELLO}\n\nShown in the web transcript: tool card + diff.`,
+          },
+        ],
+      },
+    };
+  }
+  if (names.includes("write")) {
+    return {
+      name: "write",
+      args: {
+        path: "TOOLS.md",
+        content: "Mock write so the web transcript can show a tool card and diff.\n",
+      },
+    };
+  }
+  return null;
+}
+
+export function buildMockToolSse(model: string, call: MockToolCall): string {
+  const id = `chatcmpl-mock-${crypto.randomUUID()}`;
+  const created = Math.floor(Date.now() / 1000);
+  const toolCallId = `call_mock_${crypto.randomUUID().replace(/-/g, "").slice(0, 12)}`;
+  const start = {
+    id,
+    object: "chat.completion.chunk",
+    created,
+    model,
+    choices: [
+      {
+        index: 0,
+        delta: {
+          role: "assistant",
+          content: null,
+          tool_calls: [
+            {
+              index: 0,
+              id: toolCallId,
+              type: "function",
+              function: { name: call.name, arguments: JSON.stringify(call.args) },
+            },
+          ],
+        },
+        finish_reason: null,
+      },
+    ],
+  };
+  const stop = {
+    id,
+    object: "chat.completion.chunk",
+    created,
+    model,
+    choices: [{ index: 0, delta: {}, finish_reason: "tool_calls" }],
+  };
+  return `data: ${JSON.stringify(start)}\n\ndata: ${JSON.stringify(stop)}\n\ndata: [DONE]\n\n`;
+}
+
+export function buildMockToolCompletion(model: string, call: MockToolCall) {
+  const toolCallId = `call_mock_${crypto.randomUUID().replace(/-/g, "").slice(0, 12)}`;
+  return {
+    id: `chatcmpl-mock-${crypto.randomUUID()}`,
+    object: "chat.completion",
+    created: Math.floor(Date.now() / 1000),
+    model,
+    choices: [
+      {
+        index: 0,
+        message: {
+          role: "assistant",
+          content: null,
+          tool_calls: [
+            {
+              id: toolCallId,
+              type: "function",
+              function: { name: call.name, arguments: JSON.stringify(call.args) },
+            },
+          ],
+        },
+        finish_reason: "tool_calls",
+      },
+    ],
+    usage: { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 },
+  };
+}
+
 const MOCK_TEXT =
   "Mock gateway response. Save a DeepSeek or OpenAI API key on the chat page, or set DEEPSEEK_API_KEY / OPENAI_API_KEY.";
+
+const MOCK_TOOL_FOLLOWUP_TEXT =
+  "Mock gateway finished the file tool. The transcript should show the tool card and a diff.";
 
 const MOCK_SLOW_TEXT =
   "这是一段故意拉长的 mock 流式回复，方便两台 Desk 同时订同一条 SSE。你会一个字一个字看到输出。在这段还没结束时，另一位协作者可以发跟进；消息会进 FIFO 队列，不会再开第二个 worker。";
@@ -161,8 +353,23 @@ export async function proxyChatCompletions(body: ChatCompletionBody): Promise<{
   const model = String(rewritten.model);
 
   if (config.upstream === "mock") {
+    const tool = pickMockToolCall(rewritten);
+    if (tool) {
+      return {
+        status: 200,
+        headers: {
+          "content-type": stream ? "text/event-stream; charset=utf-8" : "application/json; charset=utf-8",
+        },
+        stream,
+        payload: stream ? buildMockToolSse(model, tool) : JSON.stringify(buildMockToolCompletion(model, tool)),
+      };
+    }
     const delayMs = mockStreamDelayMs();
-    const text = delayMs ? MOCK_SLOW_TEXT : MOCK_TEXT;
+    const text = lastMessageIsToolResult(rewritten.messages)
+      ? MOCK_TOOL_FOLLOWUP_TEXT
+      : delayMs
+        ? MOCK_SLOW_TEXT
+        : MOCK_TEXT;
     return {
       status: 200,
       headers: {

@@ -73,7 +73,8 @@ function ToolCard({ tool }: { tool: TranscriptTool }) {
   return (
     <details
       className={`${tool.isError ? "tool err" : running ? "tool run" : "tool"}${subagent ? " subagent" : ""}`}
-      open={running}
+      data-tool={tool.name}
+      open={running || Boolean(diff)}
     >
       <summary>
         <span className="tool-name">
