@@ -1,0 +1,13 @@
+node_modules/
+dist/
+**/.agentscope/
+*.log
+.DS_Store
+.env
+.env.*
+!.env.example
+.pnpm-store/
+**/.neo/runs/
+**/.neo/vms/
+**/.neo/llm-upstream.env
+**/.neo/scm-push.env

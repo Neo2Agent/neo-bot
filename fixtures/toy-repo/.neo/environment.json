@@ -1,0 +1,7 @@
+{
+  "install": "printf 'ok\\n' > .neo-installed",
+  "start": "printf 'started\\n' > .neo-started",
+  "terminals": [
+    { "name": "note", "command": "printf 'term\\n' > .neo-terminal" }
+  ]
+}

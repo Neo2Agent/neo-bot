@@ -1,0 +1,174 @@
+import assert from "node:assert/strict";
+import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import path from "node:path";
+import test from "node:test";
+import { CLOUD_SYSTEM_PROMPT, CLOUD_TOOL_NAMES, createPiCloudTools, sessionToolNames } from "./cloud-tools.js";
+import { gatewayModelSpec, supportsVision } from "./model-spec.js";
+import { readExpertWorkspace } from "./expert-workspace.js";
+import {
+  applyConversationReplay,
+  applySessionMemoryWrap,
+  markCompactionEnded,
+  readUserMemory,
+  resetSessionMemoryWrapForTests,
+} from "./session.js";
+
+test("session tools include filesystem tools plus neo-git, neo-pr, and neo-diag", () => {
+  assert.deepEqual(sessionToolNames(), [
+    "read",
+    "write",
+    "edit",
+    "bash",
+    "grep",
+    "find",
+    "ls",
+    ...CLOUD_TOOL_NAMES,
+  ]);
+  assert.match(CLOUD_SYSTEM_PROMPT, /neo_git_commit/);
+  assert.match(CLOUD_SYSTEM_PROMPT, /neo_pr_open/);
+  assert.match(CLOUD_SYSTEM_PROMPT, /neo_diag/);
+  assert.match(CLOUD_SYSTEM_PROMPT, /neo_artifact_upload/);
+  assert.match(CLOUD_SYSTEM_PROMPT, /neo_browse/);
+  assert.match(CLOUD_SYSTEM_PROMPT, /neo_mcp_list/);
+  assert.match(CLOUD_SYSTEM_PROMPT, /neo_subagent/);
+  assert.match(CLOUD_SYSTEM_PROMPT, /neo_subscribe/);
+  assert.match(CLOUD_SYSTEM_PROMPT, /neo_memory_add/);
+  assert.match(CLOUD_SYSTEM_PROMPT, /neo_memory_search/);
+  assert.match(CLOUD_SYSTEM_PROMPT, /Do not `git commit`/);
+  assert.deepEqual(sessionToolNames({ includeSubagent: false }).includes("neo_subagent"), false);
+  assert.deepEqual(sessionToolNames({ includeSubagent: false }).includes("neo_subscribe"), false);
+  assert.equal(sessionToolNames({ includeSubagent: false }).includes("neo_memory_add"), true);
+  assert.equal(sessionToolNames({ includeSubagent: false }).includes("neo_memory_search"), true);
+});
+
+test("createPiCloudTools wraps extension execute into pi tool results", async () => {
+  const tools = createPiCloudTools({
+    runId: "run_wrap",
+    controlPlaneUrl: "http://control.local",
+    jwt: "jwt",
+    workspaceDir: "/tmp",
+    fetch: async () => new Response(JSON.stringify({ error: "missing message" }), { status: 400 }),
+  });
+  assert.deepEqual(
+    tools.map((item) => item.name),
+    [...CLOUD_TOOL_NAMES],
+  );
+  const commit = tools.find((item) => item.name === "neo_git_commit");
+  assert.ok(commit);
+  const result = await commit.execute("call-1", { message: "  " }, undefined, undefined, {} as never);
+  assert.equal(result.content[0]?.type, "text");
+  assert.match(result.content[0]?.type === "text" ? result.content[0].text : "", /required/i);
+  const subagent = tools.find((item) => item.name === "neo_subagent");
+  assert.ok(subagent);
+  const delegated = await subagent.execute("call-2", { agent: "scout", task: "find auth" }, undefined, undefined, {} as never);
+  const delegatedText = delegated.content[0]?.type === "text" ? delegated.content[0].text : "";
+  assert.match(delegatedText, /worker session|scout/i);
+});
+
+test("gateway model spec uses each model's advertised window", () => {
+  assert.equal(gatewayModelSpec("deepseek-v4-flash-vision-exp").contextWindow, 1_000_000);
+  assert.equal(gatewayModelSpec("deepseek-v4-flash").contextWindow, 1_000_000);
+  assert.equal(gatewayModelSpec("deepseek-v4-pro").contextWindow, 1_000_000);
+  assert.equal(gatewayModelSpec("gpt-4o-mini").contextWindow, 128_000);
+  assert.equal(gatewayModelSpec("mystery-local").contextWindow, 0);
+  assert.equal(gatewayModelSpec("mystery-local").compactionEnabled, false);
+  assert.notEqual(gatewayModelSpec("deepseek-v4-flash").contextWindow, gatewayModelSpec("gpt-4o-mini").contextWindow);
+  assert.equal(supportsVision("deepseek-v4-flash"), false);
+  assert.equal(supportsVision("deepseek-v4-flash-vision-exp"), true);
+  assert.equal(supportsVision("gpt-4o-mini"), true);
+  assert.equal(gatewayModelSpec("deepseek-v4-flash").maxTokens, 16_384);
+  assert.ok(gatewayModelSpec("deepseek-v4-flash").maxTokens < 384_000);
+});
+
+test("readExpertWorkspace loads Role Override and tool allowlist", () => {
+  const cwd = mkdtempSync(path.join(tmpdir(), "neo-expert-ws-"));
+  mkdirSync(path.join(cwd, ".neo"), { recursive: true });
+  writeFileSync(
+    path.join(cwd, ".neo", "expert.json"),
+    `${JSON.stringify({ id: "exp_reviewer", slug: "reviewer", name: "审查", kind: "expert", tools: ["read", "grep"] })}\n`,
+  );
+  writeFileSync(path.join(cwd, ".neo", "EXPERT.md"), "Role Override: You are the reviewer expert.\n");
+  const expert = readExpertWorkspace(cwd);
+  assert.match(expert.role, /Role Override/);
+  assert.deepEqual(expert.tools, ["read", "grep"]);
+});
+
+test("a run's own scratch wins over the folder it shares", () => {
+  const cwd = mkdtempSync(path.join(tmpdir(), "neo-expert-scratch-"));
+  mkdirSync(path.join(cwd, ".neo"), { recursive: true });
+  writeFileSync(path.join(cwd, ".neo", "EXPERT.md"), "Role Override: the other run's expert.\n");
+  const scratch = path.join(cwd, ".neo", "runs", "run-a");
+  mkdirSync(scratch, { recursive: true });
+  writeFileSync(
+    path.join(scratch, "expert.json"),
+    `${JSON.stringify({ id: "exp_planner", slug: "planner", name: "计划", kind: "expert", tools: ["read"] })}\n`,
+  );
+  writeFileSync(path.join(scratch, "EXPERT.md"), "Role Override: my own expert.\n");
+  const expert = readExpertWorkspace(cwd, scratch);
+  assert.match(expert.role, /my own expert/);
+  assert.deepEqual(expert.tools, ["read"]);
+});
+
+test("a run with no scratch files still reads the workspace expert", () => {
+  const cwd = mkdtempSync(path.join(tmpdir(), "neo-expert-fallback-"));
+  mkdirSync(path.join(cwd, ".neo"), { recursive: true });
+  writeFileSync(path.join(cwd, ".neo", "EXPERT.md"), "Role Override: cloud expert.\n");
+  const expert = readExpertWorkspace(cwd, path.join(cwd, ".neo", "runs", "missing"));
+  assert.match(expert.role, /cloud expert/);
+});
+
+test("readUserMemory loads .neo/MEMORY.md and ignores a missing file", () => {
+  const cwd = mkdtempSync(path.join(tmpdir(), "neo-user-memory-"));
+  assert.equal(readUserMemory(cwd), "");
+  mkdirSync(path.join(cwd, ".neo"), { recursive: true });
+  writeFileSync(path.join(cwd, ".neo", "MEMORY.md"), "# User memory\n\n- 用 pnpm\n");
+  assert.match(readUserMemory(cwd), /用 pnpm/);
+});
+
+test("readUserMemory warns on unexpected read errors without dumping content", () => {
+  const cwd = mkdtempSync(path.join(tmpdir(), "neo-user-memory-blocked-"));
+  mkdirSync(path.join(cwd, ".neo", "MEMORY.md"), { recursive: true });
+  const warnings: string[] = [];
+  const original = console.warn;
+  console.warn = (message?: unknown) => {
+    warnings.push(String(message ?? ""));
+  };
+  try {
+    assert.equal(readUserMemory(cwd), "");
+    assert.match(warnings.join("\n"), /MEMORY\.md/);
+    assert.doesNotMatch(warnings.join("\n"), /用 pnpm/);
+  } finally {
+    console.warn = original;
+  }
+});
+
+test("session memory wrap happens once after compaction", () => {
+  resetSessionMemoryWrapForTests();
+  const cwd = mkdtempSync(path.join(tmpdir(), "neo-session-memory-"));
+  mkdirSync(path.join(cwd, ".neo"), { recursive: true });
+  writeFileSync(path.join(cwd, ".neo", "SESSION_MEMORY.md"), "# Session memory\n- 用 pnpm\n");
+  assert.equal(applySessionMemoryWrap("继续", cwd), "继续");
+  markCompactionEnded();
+  const wrapped = applySessionMemoryWrap("继续", cwd);
+  assert.match(wrapped, /【本场已确认的事实】/);
+  assert.match(wrapped, /用 pnpm/);
+  assert.match(wrapped, /【用户继续】\n继续/);
+  assert.equal(applySessionMemoryWrap("再来", cwd), "再来");
+});
+
+test("conversation replay is injected only when the live session is empty", () => {
+  assert.equal(applyConversationReplay({ messages: [] }, "我们刚才聊了什么"), "我们刚才聊了什么");
+  assert.match(
+    applyConversationReplay({ messages: [] }, "我们刚才聊了什么", "【系统】历史\n用户：天气"),
+    /【用户继续】\n我们刚才聊了什么$/,
+  );
+  assert.equal(
+    applyConversationReplay(
+      { messages: [{ role: "user", content: "天气" }] as never },
+      "我们刚才聊了什么",
+      "【系统】历史",
+    ),
+    "我们刚才聊了什么",
+  );
+});

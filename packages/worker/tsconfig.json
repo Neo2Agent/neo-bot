@@ -1,0 +1,11 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@neo-bot/contracts": ["../contracts/src/index.ts"],
+      "@neo-bot/extensions": ["../extensions/src/index.ts"]
+    }
+  },
+  "include": ["src/**/*.ts"]
+}
