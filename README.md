@@ -33,3 +33,5 @@ Default `WORKER_RUNTIME=local`. With no provider key the gateway uses mock upstr
 curl -s localhost:8080/health
 pnpm smoke:web
 ```
+
+Ops (env, health, publish/rollback): [docs/ops-runbook.md](docs/ops-runbook.md).

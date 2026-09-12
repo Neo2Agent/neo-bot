@@ -22,6 +22,7 @@ If that exact version is missing, use any Node `>=22.19` from nvm.
 - `pnpm dev:web` serves the chat UI on `:5173` and starts the backend if `:8080` is down
 - `pnpm build:web`
 - `pnpm smoke:web` runs the mock login, Run, SSE, and follow-up check
+- Ops runbook (local/staging start, env, health, publish/rollback): [docs/ops-runbook.md](docs/ops-runbook.md)
 
 ## Runtime
 
