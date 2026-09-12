@@ -4,8 +4,8 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import test from "node:test";
 import { parseGithubRepo, runGit } from "./git.js";
-import { gitConfigHasSecret, prepareWorkspaceRepo, runBranchName } from "./branch.js";
-import { commitWorkspace, openDraftPullRequest } from "./deliver.js";
+import { gitConfigHasSecret, isGitRepo, prepareWorkspaceRepo, runBranchName } from "./branch.js";
+import { commitWorkspace, openDraftPullRequest, workspaceDiff } from "./deliver.js";
 
 async function initSourceRepo(): Promise<string> {
   const dir = mkdtempSync(path.join(tmpdir(), "neo-src-"));
@@ -94,6 +94,23 @@ test("GitHub draft PR uses the injected client and not a token on disk", async (
     if (previous === undefined) delete process.env.GITHUB_TOKEN;
     else process.env.GITHUB_TOKEN = previous;
   }
+});
+
+test("a folder inside another git repo is not treated as that repo", async () => {
+  const parent = await initSourceRepo();
+  const nested = path.join(parent, "copied-toy");
+  mkdirSync(nested, { recursive: true });
+  writeFileSync(path.join(nested, "hello.txt"), "hello from the toy repo\n");
+  assert.equal(await isGitRepo(nested), false);
+  const parentBranch = await runGit(parent, ["rev-parse", "--abbrev-ref", "HEAD"]);
+  const prepared = await prepareWorkspaceRepo(nested, { runId: "run-nested", prompt: "Edit hello" });
+  assert.equal(await isGitRepo(nested), true);
+  assert.equal((await runGit(parent, ["rev-parse", "--abbrev-ref", "HEAD"])).stdout, parentBranch.stdout);
+  assert.notEqual((await runGit(nested, ["rev-parse", "--show-toplevel"])).stdout, parent);
+  writeFileSync(path.join(nested, "hello.txt"), "hello from the toy repo\n\nShown in the web transcript.\n");
+  const diff = await workspaceDiff(nested, prepared.baseBranch);
+  assert.match(diff.patch, /Shown in the web transcript/);
+  assert.match(diff.stat, /hello.txt/);
 });
 
 test("default gitignore is written only when missing", async () => {

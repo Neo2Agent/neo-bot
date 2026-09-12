@@ -28,8 +28,11 @@ export function runBranchName(runId: string, prompt: string): string {
 }
 
 export async function isGitRepo(cwd: string): Promise<boolean> {
-  const result = await runGit(cwd, ["rev-parse", "--is-inside-work-tree"]);
-  return result.code === 0 && result.stdout === "true";
+  const result = await runGit(cwd, ["rev-parse", "--show-toplevel"]);
+  if (result.code !== 0 || !result.stdout) {
+    return false;
+  }
+  return path.resolve(result.stdout) === path.resolve(cwd);
 }
 
 export async function currentBranch(cwd: string): Promise<string> {

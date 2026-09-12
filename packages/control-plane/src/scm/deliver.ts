@@ -199,13 +199,19 @@ export async function openDraftPullRequest(
 }
 
 export async function workspaceDiff(cwd: string, baseBranch?: string | null): Promise<{ stat: string; patch: string }> {
-  const range = baseBranch ? `${baseBranch}...HEAD` : "HEAD";
-  const stat = await runGit(cwd, baseBranch ? ["diff", "--stat", range] : ["diff", "--stat"]);
-  const patch = await runGit(cwd, baseBranch ? ["diff", range] : ["diff"]);
-  const uncommitted = await runGit(cwd, ["diff", "--stat"]);
+  if (!baseBranch) {
+    const stat = await runGit(cwd, ["diff", "--stat"]);
+    const patch = await runGit(cwd, ["diff"]);
+    return { stat: stat.stdout, patch: patch.stdout };
+  }
+  const range = `${baseBranch}...HEAD`;
+  const committedStat = await runGit(cwd, ["diff", "--stat", range]);
+  const committedPatch = await runGit(cwd, ["diff", range]);
+  const uncommittedStat = await runGit(cwd, ["diff", "--stat"]);
+  const uncommittedPatch = await runGit(cwd, ["diff"]);
   return {
-    stat: [stat.stdout, uncommitted.stdout].filter(Boolean).join("\n"),
-    patch: patch.stdout,
+    stat: [committedStat.stdout, uncommittedStat.stdout].filter(Boolean).join("\n"),
+    patch: [committedPatch.stdout, uncommittedPatch.stdout].filter(Boolean).join("\n"),
   };
 }
 
