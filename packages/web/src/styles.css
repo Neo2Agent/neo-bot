@@ -6194,6 +6194,7 @@ html.is-narrow,
 
 .git-pane .artifact-stage {
   display: flex;
+  flex-direction: row;
   flex: 1;
   min-height: 0;
 }

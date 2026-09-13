@@ -60,6 +60,7 @@ test("run conversation uses a three-column Cursor-like chrome", () => {
   assert.match(css, /\.files-changed-label/);
   assert.match(css, /\.files-changed-file/);
   assert.match(css, /\.git-pane \.artifact-stage/);
+  assert.match(css, /\.git-pane \.artifact-stage\s*\{[^}]*flex-direction:\s*row/);
   assert.match(css, /\.files-changed/);
   assert.match(css, /\.composer\.followup-composer/);
   assert.match(css, /\.agents-sidebar\.is-collapsed/);
