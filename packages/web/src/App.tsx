@@ -26,7 +26,7 @@ import { ChatErrorBoundary } from "./components/ChatErrorBoundary";
 import { ArtifactsPanel } from "./components/ArtifactsPanel";
 import { DiffPanel } from "./components/DiffPanel";
 import { FileTree } from "./components/FileTree";
-import { TerminalPanel } from "./components/TerminalPanel";
+import { GitPane } from "./components/GitPane";
 import { AutomationsPage } from "./components/AutomationsPage";
 import { ExpertsPage } from "./components/ExpertsPage";
 import { SkillsPage } from "./components/SkillsPage";
@@ -72,12 +72,20 @@ import {
   withQueuedNotice,
   type PendingUser,
 } from "./turn";
+import { parseDiffStat, runWorkspaceLabel } from "./agents-home";
+import {
+  conversationPrBadge,
+  conversationTitle,
+  environmentLine,
+  parseDiffFiles,
+  workedForLine,
+} from "./run-chrome";
 import { useRunDiffStats } from "./use-run-diff-stats";
 import { NARROW_MQ, closeMobileSidebar, isNarrowViewport } from "./viewport";
 
 const HISTORY_PAGE = DEFAULT_TRANSCRIPT_PAGE;
 
-type SessionTab = "chat" | "diff" | "terminal" | "artifacts";
+type SessionTab = "chat" | "diff" | "artifacts";
 
 function transcriptUrl(id: string, extra?: { before?: string }): string {
   const params = new URLSearchParams({ limit: String(HISTORY_PAGE), images: "href" });
@@ -129,7 +137,7 @@ type Health = {
   vmSlots?: VmSummary;
 };
 
-type PullRequest = { url?: string; draft?: boolean };
+type PullRequest = { url?: string; draft?: boolean; number?: number | null; title?: string };
 
 function formatHealth(health: Health | null, vms: VmSummary): string {
   if (!health?.ok) return "控制面异常";
@@ -266,9 +274,6 @@ export function App() {
   const [deskFolder, setDeskFolder] = useState("");
   const [desks, setDesks] = useState<Desk[]>([]);
   const [pinnedIds, setPinnedIds] = useState<string[]>(() => (typeof window === "undefined" ? [] : readPinnedRuns()));
-  const [diagLogs, setDiagLogs] = useState<Array<{ name: string; content?: string }>>([]);
-  const [diagError, setDiagError] = useState("");
-  const [diagLoading, setDiagLoading] = useState(false);
   const [artifacts, setArtifacts] = useState<Array<{ name: string; url?: string; contentType?: string }>>([]);
   const [artifactsError, setArtifactsError] = useState("");
   const [artifactsLoading, setArtifactsLoading] = useState(false);
@@ -688,6 +693,40 @@ export function App() {
     history.replaceState(null, "", "/");
   }, [closeStream]);
 
+  const refreshRunSurfaces = useCallback((id: string) => {
+    setDiffLoading(true);
+    setDiffError("");
+    void (async () => {
+      try {
+        const response = await api(tokenRef.current, `/v1/runs/${id}/diff`);
+        const body = await readJson<{ stat?: string; patch?: string; error?: string }>(response);
+        if (!response.ok) throw new Error(body.error || "读取 diff 失败");
+        setDiffStat(body.stat ?? "");
+        setDiffPatch(body.patch ?? "");
+      } catch (error) {
+        setDiffError(error instanceof Error ? error.message : "读取 diff 失败");
+      } finally {
+        setDiffLoading(false);
+      }
+    })();
+    setArtifactsLoading(true);
+    setArtifactsError("");
+    void (async () => {
+      try {
+        const response = await api(tokenRef.current, `/v1/runs/${id}/artifacts`);
+        const body = await readJson<{ artifacts?: Array<{ name: string; url?: string; contentType?: string }>; error?: string }>(
+          response,
+        );
+        if (!response.ok) throw new Error(body.error || "读取产物失败");
+        setArtifacts(body.artifacts ?? []);
+      } catch (error) {
+        setArtifactsError(error instanceof Error ? error.message : "读取产物失败");
+      } finally {
+        setArtifactsLoading(false);
+      }
+    })();
+  }, []);
+
   const openRun = useCallback(
     async (id: string) => {
       const gen = ++openGenRef.current;
@@ -758,13 +797,14 @@ export function App() {
       setLoadingTranscript(false);
       lastSseAtRef.current = Date.now();
       listen(run.id, lastEventIdRef.current);
+      refreshRunSurfaces(run.id);
       void refreshVms();
       if (isDeskHostedTarget(run.executionTarget)) {
         void refreshDesks();
       }
       return true;
     },
-    [listen, refreshDesks, refreshVms],
+    [listen, refreshDesks, refreshRunSurfaces, refreshVms],
   );
 
   const openAutomations = useCallback(() => {
@@ -1464,6 +1504,13 @@ export function App() {
   }, [pendingTurn, messages]);
 
   useEffect(() => {
+    if (!runId || !currentRun || currentRun.id !== runId) return;
+    if (currentRun.status === "IDLE" || currentRun.status === "ERROR" || currentRun.idleAt) {
+      refreshRunSurfaces(runId);
+    }
+  }, [runId, currentRun?.id, currentRun?.status, currentRun?.idleAt, refreshRunSurfaces]);
+
+  useEffect(() => {
     void refreshExperts(activeProject?.id);
   }, [activeProject?.id, refreshExperts]);
 
@@ -1541,43 +1588,7 @@ export function App() {
   const openSessionTab = (id: SessionTab) => {
     setSessionTab(id);
     if (id === "chat" || !runId) return;
-    if (id === "diff") {
-      setDiffLoading(true);
-      setDiffError("");
-      void (async () => {
-        const response = await api(token, `/v1/runs/${runId}/diff`);
-        const body = await readJson<{ stat?: string; patch?: string; error?: string }>(response);
-        if (!response.ok) throw new Error(body.error || "读取 diff 失败");
-        setDiffStat(body.stat ?? "");
-        setDiffPatch(body.patch ?? "");
-      })()
-        .catch((error) => setDiffError(error instanceof Error ? error.message : "读取 diff 失败"))
-        .finally(() => setDiffLoading(false));
-    }
-    if (id === "terminal") {
-      setDiagLoading(true);
-      setDiagError("");
-      void (async () => {
-        const response = await api(token, `/v1/runs/${runId}/diagnostics`);
-        const body = await readJson<{ logs?: Array<{ name: string; content?: string }>; error?: string }>(response);
-        if (!response.ok) throw new Error(body.error || "读取日志失败");
-        setDiagLogs(body.logs ?? []);
-      })()
-        .catch((error) => setDiagError(error instanceof Error ? error.message : "读取日志失败"))
-        .finally(() => setDiagLoading(false));
-    }
-    if (id === "artifacts") {
-      setArtifactsLoading(true);
-      setArtifactsError("");
-      void (async () => {
-        const response = await api(token, `/v1/runs/${runId}/artifacts`);
-        const body = await readJson<{ artifacts?: Array<{ name: string; url?: string; contentType?: string }>; error?: string }>(response);
-        if (!response.ok) throw new Error(body.error || "读取产物失败");
-        setArtifacts(body.artifacts ?? []);
-      })()
-        .catch((error) => setArtifactsError(error instanceof Error ? error.message : "读取产物失败"))
-        .finally(() => setArtifactsLoading(false));
-    }
+    refreshRunSurfaces(runId);
   };
 
   const openContextDetail = (bucketId?: string) => {
@@ -1766,7 +1777,7 @@ export function App() {
 
   const openDiagnostics = () => {
     if (!runId) return;
-    openSessionTab("terminal");
+    openSessionTab("diff");
   };
 
   const loadOlder = () => {
@@ -1802,11 +1813,15 @@ export function App() {
   };
 
   const agentsHome = !narrow && mainTab === "chat" && !runId;
+  const runChrome = !narrow && mainTab === "chat" && Boolean(runId);
+  const gitTab = sessionTab === "artifacts" ? "artifacts" : "diff";
+  const diffFiles = useMemo(() => parseDiffFiles(diffStat, diffPatch), [diffStat, diffPatch]);
+  const parsedDiffStat = useMemo(() => parseDiffStat(diffStat), [diffStat]);
   const diffStats = useRunDiffStats(token, runs, Boolean(token) && !narrow);
 
   return (
     <>
-      <div className={`${sidebarOpen ? "app" : "app sidebar-closed"}${narrow ? " is-buddy" : ""}${agentsHome ? " is-agents-home" : ""}`}>
+      <div className={`${sidebarOpen ? "app" : "app sidebar-closed"}${narrow ? " is-buddy" : ""}${agentsHome ? " is-agents-home" : ""}${runChrome ? " is-run-detail" : ""}`}>
         {sidebarOpen ? <div className="sidebar-backdrop" id="sidebar-backdrop" onClick={toggleSidebar} /> : null}
         <Sidebar
           runs={runs}
@@ -1821,6 +1836,7 @@ export function App() {
           projectNames={projectNames}
           diffStats={diffStats}
           home={agentsHome}
+          collapsed={!sidebarOpen && !narrow}
           onCollapse={narrow ? undefined : toggleSidebar}
           onOpenSettings={openSettings}
           buddy={narrow}
@@ -2018,13 +2034,12 @@ export function App() {
                   {statusView.label}
                 </span>
               )}
-              {!narrow && runId ? (
+              {!narrow && runId && !runChrome ? (
                 <nav className="session-tabs" aria-label="会话标签">
                   {(
                     [
                       ["chat", "对话"],
                       ["diff", "Diff"],
-                      ["terminal", "终端"],
                       ["artifacts", "产物"],
                     ] as const
                   ).map(([id, label]) => (
@@ -2066,7 +2081,6 @@ export function App() {
                     [
                       ["chat", "对话"],
                       ["diff", "Diff"],
-                      ["terminal", "终端"],
                       ["artifacts", "产物"],
                     ] as const
                   ).map(([id, label]) => (
@@ -2353,7 +2367,7 @@ export function App() {
                 focusBucketId={contextFocusId}
                 onBack={openChat}
               />
-            ) : sessionTab === "diff" ? (
+            ) : !runChrome && sessionTab === "diff" ? (
               <DiffPanel
                 open
                 loading={diffLoading}
@@ -2364,16 +2378,7 @@ export function App() {
                 commitError={commitError}
                 onCommit={(message) => void commitWorkspace(message)}
               />
-            ) : sessionTab === "terminal" ? (
-              <TerminalPanel
-                open
-                token={token}
-                runId={runId}
-                setupLoading={diagLoading}
-                setupError={diagError}
-                setupLogs={diagLogs}
-              />
-            ) : sessionTab === "artifacts" ? (
+            ) : !runChrome && sessionTab === "artifacts" ? (
               <ArtifactsPanel
                 open
                 loading={artifactsLoading}
@@ -2487,6 +2492,16 @@ export function App() {
                     busy={busy}
                     activity={activity}
                     highlightId={highlightId}
+                    title={currentRun ? conversationTitle(currentRun) : ""}
+                    repo={currentRun ? runWorkspaceLabel(currentRun) : ""}
+                    environment={currentRun ? environmentLine(currentRun) : null}
+                    workedFor={currentRun ? workedForLine(currentRun) : null}
+                    files={diffFiles}
+                    diffStat={parsedDiffStat}
+                    diffLoading={diffLoading}
+                    diffError={diffError}
+                    diffText={diffStat}
+                    diffPatch={diffPatch}
                     onLoadOlder={loadOlder}
                     onOpenDiagnostics={openDiagnostics}
                     onPickRecipe={applyRecipe}
@@ -2496,6 +2511,49 @@ export function App() {
             )}
           </div>
           </div>
+          {runChrome ? (
+            <GitPane
+              tab={gitTab}
+              onTab={(id) => openSessionTab(id)}
+              pr={pr}
+              prBadge={currentRun ? conversationPrBadge(currentRun, pr) : null}
+              branchName={currentRun?.branchName}
+              baseBranch={currentRun?.baseBranch}
+              diffLoading={diffLoading}
+              diffError={diffError}
+              diffStat={diffStat}
+              diffPatch={diffPatch}
+              committing={committing}
+              commitError={commitError}
+              onCommit={(message) => void commitWorkspace(message)}
+              artifactsLoading={artifactsLoading}
+              artifactsError={artifactsError}
+              artifacts={artifacts}
+              projectId={currentRun?.projectId ?? activeProject?.id}
+              token={token}
+              runId={runId}
+              onSaved={(asset) => {
+                const projectId = asset.projectId || currentRun?.projectId || activeProject?.id;
+                if (projectId && token) {
+                  void api(token, `/v1/projects/${encodeURIComponent(projectId)}/assets`).then(async (response) => {
+                    if (!response.ok) return;
+                    const body = await readJson<{ assets?: ProjectAsset[] }>(response);
+                    setProjectAssets(body.assets ?? []);
+                  });
+                }
+                if (projectId && asset.id) {
+                  openProjects(projectId, { assets: true, assetId: asset.id });
+                }
+              }}
+              onOpenArtifact={
+                deskBridge()?.openPath
+                  ? (item) => {
+                      if (item.url) void deskBridge()?.openPath?.(item.url);
+                    }
+                  : undefined
+              }
+            />
+          ) : null}
           {mainTab === "chat" && !agentsHome && (activeProject || expertPick.expertId || expertPick.expertTeamId || pluginPick) ? (
             <div className="proj-chip-bar" id="project-chip">
               {activeProject ? (
@@ -2595,7 +2653,7 @@ export function App() {
               onSend={() => void sendMessage()}
               onQueue={() => void queueMessage()}
               onStop={stopTurn}
-              layout={narrow ? "buddy" : "default"}
+              layout={narrow ? "buddy" : runChrome ? "followup" : "default"}
               followUp={Boolean(runId)}
               onOpenPlus={() => setPlusOpen(true)}
             />

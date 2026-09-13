@@ -45,6 +45,22 @@ test("agents home uses the locked Cursor /agents tokens", () => {
   assert.doesNotMatch(css, /Grok promo/);
 });
 
+test("run conversation uses a three-column Cursor-like chrome", () => {
+  assert.match(css, /\.app\.is-run-detail \.main/);
+  assert.match(css, /grid-template-areas:\s*"workspace git"/);
+  assert.match(css, /minmax\(0, 1fr\) minmax\(0, 1fr\)/);
+  assert.match(css, /\.git-pane/);
+  assert.match(css, /\.run-head/);
+  assert.match(css, /\.files-changed/);
+  assert.match(css, /\.composer\.followup-composer/);
+  assert.match(css, /\.agents-sidebar\.is-collapsed/);
+  assert.match(css, /grid-template-columns:\s*48px minmax\(0, 1fr\)/);
+  assert.doesNotMatch(css, /Subscriptions/);
+  assert.doesNotMatch(css, /Desktop tab/);
+  assert.match(css, /--stage:\s*#f7f7f7/);
+  assert.match(css, /--merged:\s*#7c3aed/);
+});
+
 test("welcome cluster fits a 14-inch laptop viewport without a page scroll", () => {
   assert.match(css, /\.transcript\s*\{[^}]*container-name:\s*transcript/);
   assert.match(css, /\.empty h2\s*\{[^}]*margin:\s*0 0 8px/);

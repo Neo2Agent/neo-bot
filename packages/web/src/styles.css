@@ -5642,3 +5642,392 @@ html.is-narrow,
   border-color: var(--line);
   color: var(--text);
 }
+
+/* Cursor /agents conversation — knife 3. Same tokens as home. */
+@media (min-width: 861px) {
+  .sidebar-closed {
+    grid-template-columns: 48px minmax(0, 1fr);
+  }
+
+  .sidebar-closed .sidebar {
+    display: flex;
+  }
+}
+
+.app.is-agents-home.sidebar-closed .topbar {
+  display: none;
+}
+
+.agents-sidebar.is-collapsed {
+  padding: 10px 6px;
+  align-items: center;
+}
+
+.agents-sidebar.is-collapsed .sidebar-head {
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  padding: 2px 0 8px;
+}
+
+.agents-sidebar.is-collapsed .chats-block,
+.agents-sidebar.is-collapsed .new-chat-label,
+.agents-sidebar.is-collapsed .account-copy,
+.agents-sidebar.is-collapsed .account-menu {
+  display: none;
+}
+
+.agents-sidebar.is-collapsed .new-chat,
+.agents-sidebar.is-collapsed .new-chat:hover,
+.agents-sidebar.is-collapsed .new-chat.is-current {
+  justify-content: center;
+  width: 36px;
+  min-height: 36px;
+  padding: 6px;
+}
+
+.agents-sidebar.is-collapsed .account-card {
+  grid-template-columns: 28px;
+  justify-content: center;
+  padding: 6px 0;
+}
+
+.app.is-run-detail .main {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr) auto;
+  grid-template-areas:
+    "workspace git"
+    "composer git";
+  background: var(--stage);
+}
+
+.app.is-run-detail .topbar,
+.app.is-run-detail .proj-chip-bar {
+  display: none;
+}
+
+.app.is-run-detail .workspace-col,
+.app.is-run-detail .workspace-stage {
+  background: var(--stage);
+}
+
+.transcript-shell {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.transcript-shell .transcript {
+  flex: 1;
+  min-height: 0;
+}
+
+.app.is-run-detail .transcript-shell .run-head {
+  flex: 0 0 auto;
+  padding: 18px 28px 8px;
+  background: var(--stage);
+}
+
+.app.is-run-detail .transcript {
+  background: var(--stage);
+  padding: 8px 28px 12px;
+}
+
+.app.is-run-detail .transcript-col {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  gap: 14px;
+}
+
+.run-head {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 4px 0 8px;
+}
+
+.run-head h1,
+.app.is-run-detail .run-head h1 {
+  margin: 0;
+  color: var(--text);
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  white-space: normal;
+  overflow: visible;
+  text-overflow: unset;
+}
+
+.run-head-repo,
+.run-env,
+.run-worked {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.app.is-run-detail .bubble.user {
+  align-self: stretch;
+  max-width: 100%;
+  margin-top: 8px;
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
+  font-weight: 600;
+}
+
+.app.is-run-detail .bubble.assistant {
+  padding: 0;
+}
+
+.app.is-run-detail .md-h {
+  font-size: 15px;
+}
+
+.app.is-run-detail .tool {
+  margin: 0;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text);
+  font-size: 13px;
+}
+
+.app.is-run-detail .tool:hover {
+  background: #ececec;
+}
+
+.app.is-run-detail .tool.run,
+.app.is-run-detail .tool.err {
+  border: 0;
+}
+
+.app.is-run-detail .tool.run .tool-name {
+  color: var(--text);
+}
+
+.app.is-run-detail .tool.subagent {
+  border-left: 2px solid #d4d4d4;
+}
+
+.files-changed {
+  align-self: stretch;
+  margin-top: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--panel);
+}
+
+.files-changed > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  cursor: pointer;
+  list-style: none;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.files-changed > summary::-webkit-details-marker {
+  display: none;
+}
+
+.files-changed-list {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.files-changed-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 28px;
+  padding: 2px 4px;
+  border-radius: 6px;
+  color: var(--text);
+  font-size: 13px;
+}
+
+.files-changed-list li:hover {
+  background: var(--bg-2);
+}
+
+.files-changed-path {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.composer.followup-composer {
+  width: auto;
+  max-width: none;
+  margin: 0 20px 16px;
+  padding: 10px 12px 8px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--panel);
+  box-shadow: none;
+  max-height: none;
+}
+
+.composer.followup-composer textarea {
+  min-height: 44px;
+  max-height: 140px;
+  padding: 2px 2px 10px;
+}
+
+.composer.followup-composer textarea::placeholder {
+  color: #b0b0b0;
+}
+
+.composer.followup-composer .neo-select-pill {
+  border: 0;
+  background: var(--bg-2);
+  color: var(--text);
+  box-shadow: none;
+}
+
+.composer.followup-composer button.send,
+.composer.followup-composer button.send:disabled,
+.composer.followup-composer button.send:hover:not(:disabled),
+.composer.followup-composer button.stop {
+  width: 32px;
+  height: 32px;
+  min-height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: var(--btn-primary);
+  color: #fff;
+  opacity: 1;
+}
+
+.git-pane {
+  grid-area: git;
+  flex: none;
+  width: auto;
+  min-width: 0;
+  max-width: none;
+  min-height: 0;
+  height: auto;
+  border-left: 1px solid var(--line);
+  background: var(--panel);
+}
+
+.git-pr {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 10px;
+  padding: 12px 16px 8px;
+  border-bottom: 1px solid var(--line);
+}
+
+.git-pr-link {
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.git-pr-link:hover {
+  text-decoration: underline;
+}
+
+.git-pr-branch {
+  flex: 1 0 100%;
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.agent-badge.is-draft {
+  color: var(--muted);
+  background: var(--bg-2);
+}
+
+.git-tabs {
+  padding: 4px 14px 0;
+  border-bottom: 1px solid var(--line);
+  gap: 2px;
+}
+
+.git-tabs button {
+  border-radius: 0;
+  min-height: 34px;
+  padding: 8px 12px;
+  color: var(--muted);
+  background: transparent;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.git-tabs button.active {
+  color: var(--text);
+  background: transparent;
+  box-shadow: inset 0 -2px 0 var(--text);
+}
+
+.git-pane .diff-panel,
+.git-pane .artifacts-panel {
+  flex: 1;
+  min-height: 0;
+  margin: 0;
+  padding: 12px 16px 16px;
+  border: 0;
+  border-radius: 0;
+  background: var(--panel);
+  overflow: auto;
+}
+
+.git-pane .diff-panel.is-git > strong,
+.git-pane .artifact-head {
+  display: none;
+}
+
+.git-pane .tool-diff {
+  max-height: none;
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  background: #fff;
+  padding: 0;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.git-pane .diff-add {
+  color: var(--ok);
+  background: transparent;
+}
+
+.git-pane .diff-del {
+  color: var(--err);
+  background: transparent;
+}
+
+.git-pane .diff-stat {
+  color: var(--muted);
+  max-height: none;
+}
+
+.git-pane .artifact-row:hover,
+.git-pane .artifact-list li.is-on .artifact-row {
+  background: var(--bg-2);
+  box-shadow: none;
+}

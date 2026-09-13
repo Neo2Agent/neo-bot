@@ -1,5 +1,6 @@
 type Props = {
   open: boolean;
+  chrome?: "default" | "git";
   loading: boolean;
   error: string;
   stat: string;
@@ -9,12 +10,12 @@ type Props = {
   onCommit?: (message: string) => void;
 };
 
-export function DiffPanel({ open, loading, error, stat, patch, committing, commitError, onCommit }: Props) {
+export function DiffPanel({ open, chrome = "default", loading, error, stat, patch, committing, commitError, onCommit }: Props) {
   if (!open) return null;
   return (
-    <section className="diff-panel" id="run-diff">
-      <strong>本轮 Diff</strong>
-      {onCommit ? (
+    <section className={`diff-panel${chrome === "git" ? " is-git" : ""}`} id="run-diff">
+      {chrome === "git" ? null : <strong>本轮 Diff</strong>}
+      {chrome !== "git" && onCommit && (stat || patch || loading) ? (
         <form
           className="diff-commit"
           onSubmit={(event) => {
@@ -34,7 +35,7 @@ export function DiffPanel({ open, loading, error, stat, patch, committing, commi
       {loading ? <p className="hint">正在对比…</p> : null}
       {error ? <p className="setup err">{error}</p> : null}
       {!loading && !error && !stat && !patch ? <p className="hint">工作区没有可展示的 diff。</p> : null}
-      {stat ? <pre className="diff-stat">{stat}</pre> : null}
+      {stat && !(chrome === "git" && patch) ? <pre className="diff-stat">{stat}</pre> : null}
       {patch ? (
         <pre className="tool-diff">
           {patch.split("\n").map((line, index) => (
