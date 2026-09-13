@@ -23,6 +23,10 @@ test("parseDiffStat reads git --stat summaries", () => {
     parseDiffStat(" a.ts | 10 +++---\n b.ts | 4 ++--\n 2 files changed, 930 insertions(+), 33 deletions(-)\n"),
     { files: 2, added: 930, deleted: 33 },
   );
+  assert.deepEqual(
+    parseDiffStat("12 files changed, 12 insertions(+)\nhello.txt | 2 ++\n13 files changed, 14 insertions(+)\n"),
+    { files: 13, added: 14, deleted: 0 },
+  );
 });
 
 test("groupRunsByTime buckets Last 7 days then older", () => {

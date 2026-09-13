@@ -6,21 +6,30 @@ import { isShelvedRun } from "./pins";
 
 const MAX_RUNS = 20;
 
+function diffRoster(runs: Run[]): string {
+  return runs.map((run) => `${run.id}:${runTimestamp(run)}:${run.status}`).join("|");
+}
+
+function pickDiffTargets(runs: Run[]): Run[] {
+  const live = runs.filter((run) => !isShelvedRun(run.status));
+  const cards = recentAgentRuns(runs, MAX_RUNS);
+  const seen = new Set<string>();
+  const next: Run[] = [];
+  for (const run of [...live, ...cards]) {
+    if (seen.has(run.id) || next.length >= MAX_RUNS) continue;
+    seen.add(run.id);
+    next.push(run);
+  }
+  return next;
+}
+
 export function useRunDiffStats(token: string, runs: Run[], enabled: boolean): Record<string, DiffStat> {
   const [stats, setStats] = useState<Record<string, DiffStat>>({});
   const cacheRef = useRef<Record<string, { stamp: string; stat: DiffStat }>>({});
-  const targets = useMemo(() => {
-    const live = runs.filter((run) => !isShelvedRun(run.status));
-    const cards = recentAgentRuns(runs, MAX_RUNS);
-    const seen = new Set<string>();
-    const next: Run[] = [];
-    for (const run of [...live, ...cards]) {
-      if (seen.has(run.id) || next.length >= MAX_RUNS) continue;
-      seen.add(run.id);
-      next.push(run);
-    }
-    return next;
-  }, [runs]);
+  const runsRef = useRef(runs);
+  runsRef.current = runs;
+  const roster = diffRoster(runs);
+  const targets = useMemo(() => pickDiffTargets(runsRef.current), [roster]);
   const signature = useMemo(
     () => targets.map((run) => `${run.id}:${runTimestamp(run)}`).join("|"),
     [targets],

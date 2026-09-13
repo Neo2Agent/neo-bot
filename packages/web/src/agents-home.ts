@@ -15,13 +15,18 @@ export type TimeGroup<T> = {
 const WEEK_MS = 7 * 86_400_000;
 const MONTH_MS = 30 * 86_400_000;
 
+function lastInt(text: string, pattern: RegExp): number {
+  const matches = [...text.matchAll(pattern)];
+  return Number(matches.at(-1)?.[1] ?? 0);
+}
+
 /** Parse `git diff --stat` text from GET /v1/runs/:id/diff. */
 export function parseDiffStat(stat: string): DiffStat {
   const text = stat.trim();
   if (!text) return { files: 0, added: 0, deleted: 0 };
-  const files = Number(/(\d+)\s+files?\s+changed/.exec(text)?.[1] ?? 0);
-  const added = Number(/(\d+)\s+insertions?\(\+\)/.exec(text)?.[1] ?? 0);
-  const deleted = Number(/(\d+)\s+deletions?\(-\)/.exec(text)?.[1] ?? 0);
+  const files = lastInt(text, /(\d+)\s+files?\s+changed/g);
+  const added = lastInt(text, /(\d+)\s+insertions?\(\+\)/g);
+  const deleted = lastInt(text, /(\d+)\s+deletions?\(-\)/g);
   if (files || added || deleted) return { files, added, deleted };
   const fileLines = text.split("\n").filter((line) => /\|/.test(line));
   return { files: fileLines.length, added: 0, deleted: 0 };
