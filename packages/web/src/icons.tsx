@@ -210,6 +210,20 @@ export function IconFileKind({ kind, ...props }: IconProps & { kind: ArtifactKin
   return icon(File, props);
 }
 
+export function IconPath({ path, ...props }: IconProps & { path: string }) {
+  const name = path.toLowerCase();
+  if (/\.(png|jpe?g|gif|webp|svg)$/.test(name)) return icon(FileImage, props);
+  if (/\.(html?|tsx?|jsx?|mjs|cjs|css|scss)$/.test(name)) return icon(FileCode, props);
+  if (name.endsWith(".json")) return icon(FileBraces, props);
+  if (/\.(md|txt|log)$/.test(name)) return icon(FileText, props);
+  return icon(File, props);
+}
+
+export function fileBaseName(path: string): string {
+  const parts = path.replace(/\\/g, "/").split("/");
+  return parts[parts.length - 1] || path;
+}
+
 export function IconInbox(props: IconProps) {
   return icon(Bell, props);
 }

@@ -8,6 +8,7 @@ type Artifact = { name: string; url?: string; contentType?: string };
 
 type Props = {
   open: boolean;
+  chrome?: "default" | "git";
   loading: boolean;
   error: string;
   artifacts: Artifact[];
@@ -18,8 +19,24 @@ type Props = {
   onSaved?: (asset: ProjectAsset) => void;
 };
 
+const GIT_KIND_LABEL = {
+  html: "HTML",
+  image: "Image",
+  json: "JSON",
+  markdown: "Markdown",
+  text: "Text",
+  file: "File",
+} as const;
+
+function artifactMeta(item: Artifact, git: boolean): string {
+  const type = item.contentType?.trim();
+  if (type) return type;
+  return git ? GIT_KIND_LABEL[artifactKind(item)] : artifactKindLabel(item);
+}
+
 export function ArtifactsPanel({
   open,
+  chrome = "default",
   loading,
   error,
   artifacts,
@@ -33,6 +50,7 @@ export function ArtifactsPanel({
   const [busy, setBusy] = useState(false);
   const [saveError, setSaveError] = useState("");
   if (!open) return null;
+  const git = chrome === "git";
   const kind = preview ? previewKind(preview) : null;
   const canSave = Boolean(projectId && token && runId);
 
@@ -56,41 +74,47 @@ export function ArtifactsPanel({
   };
 
   return (
-    <section className={`artifacts-panel${preview ? " is-previewing" : ""}`} id="run-artifacts">
+    <section className={`artifacts-panel${preview ? " is-previewing" : ""}${git ? " is-git" : ""}`} id="run-artifacts">
       <div className="artifact-head">
-        <strong>产物</strong>
-        {!canSave && !preview ? <p className="hint">只有项目对话才能保存到项目。</p> : null}
+        <strong>{git ? "Artifacts" : "产物"}</strong>
+        {!git && !canSave && !preview ? <p className="hint">只有项目对话才能保存到项目。</p> : null}
       </div>
-      {loading ? <p className="hint">正在读取…</p> : null}
+      {loading ? <p className="hint">{git ? "Loading…" : "正在读取…"}</p> : null}
       {error ? <p className="setup err">{error}</p> : null}
       {saveError ? <p className="setup err">{saveError}</p> : null}
-      {!loading && !error && artifacts.length === 0 ? <p className="hint">还没有产物。</p> : null}
+      {!loading && !error && artifacts.length === 0 && !git ? <p className="hint">还没有产物。</p> : null}
+      {artifacts.length > 0 || git ? (
+      <div className="artifact-stage">
       <ul className="artifact-list">
         {artifacts.map((item) => {
           const selected = preview?.name === item.name;
-          const thumb = previewKind(item) === "image" && item.url;
+          const previewable = previewKind(item);
           return (
             <li key={item.name} className={selected ? "is-on" : undefined}>
               <button
                 type="button"
                 className="artifact-row"
                 aria-pressed={selected}
+                data-preview-kind={previewable ?? undefined}
+                data-content-type={item.contentType}
+                title={artifactMeta(item, git)}
                 onClick={() => setPreview(selected ? null : item)}
               >
                 <span className="artifact-glyph">
-                  {thumb ? <img src={item.url} alt="" /> : <IconFileKind kind={artifactKind(item)} size={16} />}
+                  <IconFileKind kind={artifactKind(item)} size={git ? 14 : 16} />
                 </span>
                 <span className="artifact-copy">
                   <span className="artifact-name">{item.name}</span>
-                  <small>{artifactKindLabel(item)}</small>
+                  {git ? null : <small>{artifactMeta(item, git)}</small>}
                 </span>
               </button>
             </li>
           );
         })}
       </ul>
-      {preview ? (
-        <div className="artifact-preview">
+        <div className="artifact-preview" data-preview-kind={kind ?? "none"}>
+          {preview ? (
+            <>
           <div className="artifact-preview-bar">
             <strong>{preview.name}</strong>
             <span className="artifact-preview-actions">
@@ -101,10 +125,10 @@ export function ArtifactsPanel({
                   disabled={busy}
                   onClick={() => void save(preview)}
                 >
-                  {busy ? "保存中…" : "存入项目"}
+                  {busy ? (git ? "Saving…" : "保存中…") : git ? "Save to project" : "存入项目"}
                 </button>
               ) : null}
-              <button type="button" className="icon-btn" aria-label="关闭预览" onClick={() => setPreview(null)}>
+              <button type="button" className="icon-btn" aria-label={git ? "Close preview" : "关闭预览"} onClick={() => setPreview(null)}>
                 <IconClose size={16} />
               </button>
             </span>
@@ -115,10 +139,12 @@ export function ArtifactsPanel({
             </div>
           ) : kind === "html" && preview.url ? (
             <iframe className="artifact-preview-frame" title={preview.name} src={preview.url} sandbox="allow-scripts" />
+          ) : git ? (
+            <div className="artifact-preview-empty" />
           ) : (
             <div className="artifact-preview-empty">
               <IconFileKind kind={artifactKind(preview)} size={28} />
-              <p>{artifactKindLabel(preview)} 文件，无法预览</p>
+              <p>{`${artifactKindLabel(preview)} 文件，无法预览`}</p>
               {preview.url || onOpen ? (
                 <button
                   type="button"
@@ -136,7 +162,14 @@ export function ArtifactsPanel({
               ) : null}
             </div>
           )}
+            </>
+          ) : (
+            <div className="artifact-preview-empty">
+              <p>{git ? (artifacts.length ? "Select a file" : "No artifacts yet.") : "选择一个文件"}</p>
+            </div>
+          )}
         </div>
+      </div>
       ) : null}
     </section>
   );

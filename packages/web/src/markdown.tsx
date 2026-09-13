@@ -71,6 +71,12 @@ function renderBlocks(source: string): ReactNode[] {
       i += 1;
       continue;
     }
+    const table = readPipeTable(lines, i);
+    if (table) {
+      nodes.push(renderTableFold(table.rows, key++));
+      i = table.end;
+      continue;
+    }
     if (/^\s*[-*]\s+/.test(line)) {
       const items: string[] = [];
       while (i < lines.length && /^\s*[-*]\s+/.test(lines[i] ?? "")) {
@@ -91,7 +97,14 @@ function renderBlocks(source: string): ReactNode[] {
       continue;
     }
     const para: string[] = [];
-    while (i < lines.length && (lines[i] ?? "").trim() && !/^```/.test(lines[i] ?? "") && !/^(#{1,3})\s+/.test(lines[i] ?? "") && !/^\s*[-*]\s+/.test(lines[i] ?? "")) {
+    while (
+      i < lines.length &&
+      (lines[i] ?? "").trim() &&
+      !/^```/.test(lines[i] ?? "") &&
+      !/^(#{1,3})\s+/.test(lines[i] ?? "") &&
+      !/^\s*[-*]\s+/.test(lines[i] ?? "") &&
+      !readPipeTable(lines, i)
+    ) {
       para.push(lines[i] ?? "");
       i += 1;
     }
@@ -102,6 +115,73 @@ function renderBlocks(source: string): ReactNode[] {
     );
   }
   return nodes;
+}
+
+function isPipeRow(line: string): boolean {
+  const text = line.trim();
+  if (!text.includes("|")) return false;
+  return (text.match(/\|/g)?.length ?? 0) >= 2 || text.startsWith("|") || text.endsWith("|");
+}
+
+function isSeparatorRow(line: string): boolean {
+  return /^\s*\|?\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)+\|?\s*$/.test(line);
+}
+
+function parseTableRow(line: string): string[] {
+  let text = line.trim();
+  if (text.startsWith("|")) text = text.slice(1);
+  if (text.endsWith("|")) text = text.slice(0, -1);
+  return text.split("|").map((cell) => cell.trim());
+}
+
+export function readPipeTable(
+  lines: string[],
+  start: number,
+): { rows: string[][]; end: number } | null {
+  if (!isPipeRow(lines[start] ?? "")) return null;
+  const block: string[] = [];
+  let index = start;
+  while (index < lines.length && isPipeRow(lines[index] ?? "")) {
+    block.push(lines[index] ?? "");
+    index += 1;
+  }
+  if (block.length >= 2 && isSeparatorRow(block[1] ?? "")) {
+    return { rows: block.filter((_, row) => row !== 1).map(parseTableRow), end: index };
+  }
+  if (block.length >= 3) {
+    return { rows: block.map(parseTableRow), end: index };
+  }
+  return null;
+}
+
+function renderTableFold(rows: string[][], key: number): ReactNode {
+  const header = rows[0] ?? [];
+  const eventLog = header.some((cell) => /event/i.test(cell));
+  return (
+    <details key={key} className="md-table-fold">
+      <summary>{eventLog ? "Event log" : "Table"}</summary>
+      <div className="md-table-wrap">
+        <table className="md-table">
+          <thead>
+            <tr>
+              {header.map((cell, index) => (
+                <th key={index}>{renderInline(cell)}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {rows.slice(1).map((row, rowIndex) => (
+              <tr key={rowIndex}>
+                {row.map((cell, cellIndex) => (
+                  <td key={cellIndex}>{renderInline(cell)}</td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </details>
+  );
 }
 
 function renderInline(source: string): ReactNode[] {

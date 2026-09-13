@@ -4,8 +4,16 @@ import { transcriptGroups } from "@neo-bot/contracts/transcript";
 import type { TranscriptMessage, TranscriptTool } from "@neo-bot/contracts/events";
 import type { Recipe } from "@neo-bot/contracts/recipe";
 import { BUNDLED_RECIPES } from "@neo-bot/contracts/recipe";
-import { fileToolDiff, formatDuration, formatMessageTime, formatWhen, toolArgPreview } from "../format";
-import { IconCheck, IconError, IconSpinner, IconTool } from "../icons";
+import {
+  fileToolDiff,
+  formatDuration,
+  formatMessageTime,
+  formatWhen,
+  toolActivityKind,
+  toolActivityLabel,
+  toolArgPreview,
+} from "../format";
+import { fileBaseName, IconCheck, IconChevronDown, IconError, IconPath, IconSpinner, IconTool } from "../icons";
 import { MarkdownBody } from "../markdown";
 import { hasDiffStat, type DiffStat } from "../agents-home";
 import { isSameUserPrompt, type DiffFile } from "../run-chrome";
@@ -67,10 +75,14 @@ function readSubagentTasks(details?: Record<string, unknown>): SubagentTask[] {
   });
 }
 
-function ToolCard({ tool }: { tool: TranscriptTool }) {
+function ToolCard({ tool, compact = false }: { tool: TranscriptTool; compact?: boolean }) {
   const running = tool.status === "running" && !tool.output;
   const preview = toolArgPreview(tool.args);
   const diff = fileToolDiff(tool);
+  const kind = toolActivityKind(tool.name);
+  const name = toolDisplayName(tool);
+  const label = compact ? toolActivityLabel(tool, name) : name;
+  const inline = compact && (kind === "explore" || kind === "default");
   const preRef = useRef<HTMLPreElement>(null);
   const parentSubagent = tool.name === "neo_subagent";
   const subagent = parentSubagent || Boolean(tool.details?.subagent);
@@ -85,17 +97,25 @@ function ToolCard({ tool }: { tool: TranscriptTool }) {
 
   return (
     <details
-      className={`${tool.isError ? "tool err" : running ? "tool run" : "tool"}${subagent ? " subagent" : ""}`}
+      className={[
+        "tool",
+        tool.isError ? "err" : running ? "run" : "",
+        subagent ? "subagent" : "",
+        compact ? `is-compact is-${kind}` : "",
+      ]
+        .filter(Boolean)
+        .join(" ")}
       data-tool={tool.name}
-      open={running || Boolean(diff)}
+      {...(running ? { open: true } : {})}
     >
       <summary>
+        {inline ? null : <span className="tool-chevron" aria-hidden="true" />}
         <span className="tool-name">
-          <ToolStatus tool={tool} />
-          <IconTool name={tool.name} size={14} />
-          {toolDisplayName(tool)}
+          {running ? <IconSpinner size={12} /> : tool.isError ? <IconError size={12} /> : compact ? null : <ToolStatus tool={tool} />}
+          {compact && kind !== "file" ? null : <IconTool name={tool.name} size={14} />}
+          {label}
         </span>
-        {preview ? <span className="cmd">{preview}</span> : null}
+        {!compact && preview ? <span className="cmd">{preview}</span> : null}
       </summary>
       {tasks.length > 0 ? (
         <ul className="subagent-tasks">
@@ -153,6 +173,63 @@ function MessageTime({ message, className = "" }: { message: TranscriptMessage; 
       {formatMessageTime(message.createdAt, message.updatedAt, Boolean(message.streaming))}
       {duration ? ` · ${duration}` : ""}
     </time>
+  );
+}
+
+function setupFailed(message: TranscriptMessage): boolean {
+  return message.level === "error" || String(message.kind).endsWith("_failed") || message.kind === "run.error";
+}
+
+function SetupLine({
+  message,
+  highlightId,
+  onOpenDiagnostics,
+}: {
+  message: TranscriptMessage;
+  highlightId?: string | null;
+  onOpenDiagnostics?: () => void;
+}) {
+  const failed = setupFailed(message);
+  return (
+    <p
+      id={`msg-${message.id}`}
+      className={failed ? "setup err" : "setup"}
+      data-highlight={highlightId === message.id ? "true" : undefined}
+    >
+      <span>{message.text}</span>
+      {failed && onOpenDiagnostics ? (
+        <button type="button" className="ghost diag-link" onClick={onOpenDiagnostics}>
+          查看诊断
+        </button>
+      ) : null}
+      <time className="bubble-time setup-time" dateTime={message.createdAt}>
+        {formatWhen(message.createdAt)}
+      </time>
+    </p>
+  );
+}
+
+function SetupFold({
+  messages,
+  highlightId,
+  onOpenDiagnostics,
+}: {
+  messages: TranscriptMessage[];
+  highlightId?: string | null;
+  onOpenDiagnostics?: () => void;
+}) {
+  const failed = messages.some(setupFailed);
+  return (
+    <details className={failed ? "setup-fold is-fail" : "setup-fold"} open={failed}>
+      <summary>
+        {failed ? <IconError size={12} /> : <IconCheck size={12} />}
+        <span>{failed ? "Setup failed" : "Setup"}</span>
+        <span className="setup-fold-count">{messages.length}</span>
+      </summary>
+      {messages.map((message) => (
+        <SetupLine key={message.id} message={message} highlightId={highlightId} onOpenDiagnostics={onOpenDiagnostics} />
+      ))}
+    </details>
   );
 }
 
@@ -234,8 +311,21 @@ export function Transcript({
         <header className="run-head">
           <h1 id="run-conversation-title">{title}</h1>
           {repo ? <p className="run-head-repo">{repo}</p> : null}
-          {environment ? <p className="run-env">{environment}</p> : null}
-          {workedFor ? <p className="run-worked">{workedFor}</p> : null}
+          {environment === "Environment ready" || workedFor ? (
+            <div className="run-meta">
+              {environment === "Environment ready" ? (
+                <p className="run-env is-ready">
+                  <IconCheck size={12} />
+                  Environment ready
+                </p>
+              ) : null}
+              {workedFor ? (
+                <details className="run-worked">
+                  <summary>{workedFor}</summary>
+                </details>
+              ) : null}
+            </div>
+          ) : null}
         </header>
       ) : null}
     <section
@@ -289,24 +379,36 @@ export function Transcript({
               return <ArtifactCard key={message.id} message={message} />;
             }
             if (message.role === "setup") {
-              const failed = message.level === "error" || String(message.kind).endsWith("_failed") || message.kind === "run.error";
+              if (title) {
+                const prev = messages[messageIndex - 1];
+                if (prev?.role === "setup" && prev.kind !== "artifact.uploaded") {
+                  return null;
+                }
+                const group = [message];
+                for (let index = messageIndex + 1; index < messages.length; index += 1) {
+                  const next = messages[index];
+                  if (next.role !== "setup" || next.kind === "artifact.uploaded") break;
+                  group.push(next);
+                }
+                if (!group.some(setupFailed)) {
+                  return null;
+                }
+                return (
+                  <SetupFold
+                    key={group[0]?.id}
+                    messages={group}
+                    highlightId={highlightId}
+                    onOpenDiagnostics={onOpenDiagnostics}
+                  />
+                );
+              }
               return (
-                <p
+                <SetupLine
                   key={message.id}
-                  id={`msg-${message.id}`}
-                  className={failed ? "setup err" : "setup"}
-                  data-highlight={highlightId === message.id ? "true" : undefined}
-                >
-                  <span>{message.text}</span>
-                  {failed && onOpenDiagnostics ? (
-                    <button type="button" className="ghost diag-link" onClick={onOpenDiagnostics}>
-                      查看诊断
-                    </button>
-                  ) : null}
-                  <time className="bubble-time setup-time" dateTime={message.createdAt}>
-                    {formatWhen(message.createdAt)}
-                  </time>
-                </p>
+                  message={message}
+                  highlightId={highlightId}
+                  onOpenDiagnostics={onOpenDiagnostics}
+                />
               );
             }
             if (message.role === "user") {
@@ -355,7 +457,11 @@ export function Transcript({
                       <Fragment key={`${message.id}-tools-${index}`}>
                         <div className="tool-stack">
                           {group.tools.map((tool, toolIndex) => (
-                            <ToolCard key={tool.id ?? `${tool.name}-${toolIndex}`} tool={tool} />
+                            <ToolCard
+                              key={tool.id ?? `${tool.name}-${toolIndex}`}
+                              tool={tool}
+                              compact={Boolean(title)}
+                            />
                           ))}
                         </div>
                         {last ? <MessageTime message={message} className="assistant-time" /> : null}
@@ -386,8 +492,11 @@ export function Transcript({
         {!empty && !loading && (files.length > 0 || hasDiffStat(diffStat) || Boolean(diffPatch.trim())) ? (
           <details className="files-changed" open>
             <summary>
-              <span>
-                {fileCount} {fileCount === 1 ? "File" : "Files"} Changed
+              <span className="files-changed-label">
+                <IconChevronDown size={14} />
+                <span>
+                  {fileCount} {fileCount === 1 ? "File" : "Files"} Changed
+                </span>
               </span>
               {hasDiffStat(diffStat) && diffStat ? (
                 <span className="change-counts">
@@ -399,8 +508,11 @@ export function Transcript({
             {files.length > 0 ? (
               <ul className="files-changed-list">
                 {files.map((file) => (
-                  <li key={file.path}>
-                    <span className="files-changed-path">{file.path}</span>
+                  <li key={file.path} title={file.path}>
+                    <span className="files-changed-file">
+                      <IconPath path={file.path} size={14} />
+                      <span className="files-changed-path">{fileBaseName(file.path)}</span>
+                    </span>
                     <span className="change-counts">
                       {file.added > 0 ? <span className="change-add">+{file.added}</span> : null}
                       {file.deleted > 0 ? <span className="change-del">−{file.deleted}</span> : null}

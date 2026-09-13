@@ -9,6 +9,7 @@ test("previewKind maps html and images, ignores text", () => {
   assert.equal(previewKind({ name: "shot.PNG" }), "image");
   assert.equal(previewKind({ name: "cover", contentType: "image/webp" }), "image");
   assert.equal(previewKind({ name: "notes.txt", contentType: "text/plain" }), null);
+  assert.equal(previewKind({ name: "clip.mp4", contentType: "video/mp4" }), null);
 });
 
 test("artifactKind maps names and types to a short kind", () => {

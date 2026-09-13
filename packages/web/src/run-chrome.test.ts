@@ -43,10 +43,12 @@ test("environmentLine is derived from setupStatus, not SSE", () => {
   assert.equal(environmentLine({ status: "IDLE", setupStatus: "START_SUCCEEDED" }), "Environment ready");
   assert.equal(environmentLine({ status: "IDLE", setupStatus: "INSTALL_SUCCEEDED" }), "Environment ready");
   assert.equal(environmentLine({ status: "RUNNING", setupStatus: "START_SUCCEEDED" }), "Environment ready");
+  assert.equal(environmentLine({ status: "RUNNING", setupStatus: "INSTALL_SUCCEEDED" }), null);
   assert.equal(environmentLine({ status: "RUNNING", setupStatus: "START_STARTED" }), null);
   assert.equal(environmentLine({ status: "INSTALLING", setupStatus: "INSTALL_STARTED" }), null);
-  assert.equal(environmentLine({ status: "ERROR", setupStatus: "INSTALL_FAILED" }), "Environment failed");
-  assert.equal(environmentLine({ status: "ERROR", setupStatus: "START_FAILED" }), "Environment failed");
+  assert.equal(environmentLine({ status: "IDLE", setupStatus: null }), null);
+  assert.equal(environmentLine({ status: "ERROR", setupStatus: "INSTALL_FAILED" }), null);
+  assert.equal(environmentLine({ status: "ERROR", setupStatus: "START_FAILED" }), null);
 });
 
 test("workedForLine uses createdAt and idleAt only", () => {
@@ -59,7 +61,12 @@ test("workedForLine uses createdAt and idleAt only", () => {
     workedForLine({ createdAt: "2026-09-13T12:00:00.000Z", idleAt: null, status: "RUNNING" }, now),
     "Worked for 40s",
   );
+  assert.equal(
+    workedForLine({ createdAt: "2026-09-13T12:00:00.000Z", idleAt: "2026-09-13T12:05:58.000Z", status: "IDLE" }, now),
+    "Worked for 5m 58s",
+  );
   assert.equal(workedForLine({ createdAt: "2026-09-13T12:00:00.000Z", idleAt: null, status: "IDLE" }, now), null);
+  assert.equal(workedForLine({ createdAt: "bad", idleAt: "2026-09-13T12:00:40.000Z", status: "IDLE" }, now), null);
 });
 
 test("conversationPrBadge hides when no PR and maps Open / Draft / Merged", () => {

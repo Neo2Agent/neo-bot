@@ -127,6 +127,37 @@ export function formatMessageTime(
   return `${created} · 完成 ${formatWhen(updatedAt, now)}`;
 }
 
+export type ToolActivityKind = "shell" | "file" | "explore" | "default";
+
+export function toolActivityKind(name: string): ToolActivityKind {
+  const n = name.toLowerCase();
+  if (n === "bash" || n === "shell" || n.startsWith("neo_diag")) return "shell";
+  if (n === "edit" || n === "write" || n === "apply_patch") return "file";
+  if (
+    n === "read" ||
+    n === "cat" ||
+    n === "grep" ||
+    n === "glob" ||
+    n === "ls" ||
+    n === "find" ||
+    n === "search" ||
+    n.endsWith("_search")
+  ) {
+    return "explore";
+  }
+  return "default";
+}
+
+export function toolActivityLabel(tool: Pick<TranscriptTool, "name" | "args">, displayName: string): string {
+  const kind = toolActivityKind(tool.name);
+  const preview = toolArgPreview(tool.args);
+  const useful = Boolean(preview) && preview !== "{}" && preview !== "[]";
+  if (kind === "explore") return useful ? `explored ${preview}` : "explored";
+  if (kind === "shell") return useful ? `$ ${preview}` : "$";
+  if (kind === "file") return useful ? preview : displayName;
+  return displayName;
+}
+
 export function toolArgPreview(args: unknown): string {
   if (!args || typeof args !== "object") {
     return args == null ? "" : String(args);

@@ -91,6 +91,7 @@ export function GitPane({
       {tab === "artifacts" ? (
         <ArtifactsPanel
           open
+          chrome="git"
           loading={artifactsLoading}
           error={artifactsError}
           artifacts={artifacts}
