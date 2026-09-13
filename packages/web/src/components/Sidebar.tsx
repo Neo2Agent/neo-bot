@@ -1,13 +1,35 @@
 import { useState } from "react";
 import type { Run } from "@neo-bot/contracts/run";
+import {
+  accountInitials,
+  accountName,
+  chatStatusTone,
+  formatRelativeAge,
+  groupRunsByTime,
+  hasDiffStat,
+  runTimestamp,
+  type DiffStat,
+} from "../agents-home";
 import { formatRunTime, runListPlaceSuffix, runListTitle, STATUS_LABELS } from "../format";
 import { BuddyMascot } from "@neo-bot/ui";
-import { IconClose, IconExperts, IconPlus, IconProjects, IconSkills, IconStar, IconTrash } from "../icons";
+import {
+  IconClose,
+  IconExperts,
+  IconGear,
+  IconMark,
+  IconNewChat,
+  IconPlus,
+  IconProjects,
+  IconSidebarClose,
+  IconSkills,
+  IconStar,
+  IconTrash,
+} from "../icons";
 import { BuddyIcon, BuddyTargetToggle } from "@neo-bot/ui";
 import { WEB_V1 } from "../scope";
 import { filterRuns, groupRunsByProject, isShelvedRun, splitShelvedRuns } from "../pins";
 import { isActiveRunStatus } from "../turn";
-import { VmSlots } from "./VmSlots";
+import { ChangeCounts } from "./AgentsHome";
 
 export type VmSlotView = {
   id: string;
@@ -26,6 +48,8 @@ type Props = {
   health: string;
   pinnedIds?: string[];
   projectNames?: Record<string, string>;
+  diffStats?: Record<string, DiffStat>;
+  home?: boolean;
   onNewChat: () => void;
   onOpenRun: (id: string) => void;
   onPin?: (id: string) => void;
@@ -34,6 +58,8 @@ type Props = {
   onLogin: () => void;
   onLogout: () => void;
   onClose?: () => void;
+  onCollapse?: () => void;
+  onOpenSettings?: () => void;
   buddy?: boolean;
   target?: "cloud" | "desk";
   deskDisabled?: boolean;
@@ -52,6 +78,8 @@ export function Sidebar({
   health,
   pinnedIds = [],
   projectNames = {},
+  diffStats = {},
+  home = false,
   onNewChat,
   onOpenRun,
   onPin,
@@ -60,6 +88,8 @@ export function Sidebar({
   onLogin,
   onLogout,
   onClose,
+  onCollapse,
+  onOpenSettings,
   buddy = false,
   target = "cloud",
   deskDisabled = false,
@@ -77,12 +107,13 @@ export function Sidebar({
   const visible = filterRuns(items, query);
   const { live, shelved } = splitShelvedRuns(visible);
   const grouped = groupRunsByProject(live, pinnedIds, projectNames);
+  const timed = groupRunsByTime(live);
 
   const toggle = (id: string) => {
     setSelected((prev) => (prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]));
   };
 
-  const renderRun = (run: Run) => {
+  const renderBuddyRun = (run: Run) => {
     const running = isActiveRunStatus(run.status);
     const pinned = pinnedIds.includes(run.id);
     const canSelect = selecting && !isShelvedRun(run.status);
@@ -157,140 +188,230 @@ export function Sidebar({
     );
   };
 
-  return (
-    <aside className="sidebar">
-      <div className="sidebar-head">
-        <div className="brand">
-          <span className="mark">
-            <BuddyMascot size={30} compact />
-          </span>
-          <div>
-            <strong>Neo</strong>
-            <span>Web v1</span>
+  const renderChatRow = (run: Run) => {
+    const running = isActiveRunStatus(run.status);
+    const tone = chatStatusTone(run.status);
+    const stat = diffStats[run.id];
+    return (
+      <div
+        key={run.id}
+        className={`run-item chat-row${run.id === currentRunId ? " active" : ""}${running ? " busy" : ""}`}
+        data-id={run.id}
+        data-busy={running ? "true" : "false"}
+        data-tone={tone}
+        role="button"
+        tabIndex={0}
+        aria-current={run.id === currentRunId ? "true" : undefined}
+        onClick={() => onOpenRun(run.id)}
+        onKeyDown={(event) => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            onOpenRun(run.id);
+          }
+        }}
+      >
+        <span className={`chat-dot is-${tone}${running ? " is-pulse" : ""}`} aria-hidden="true" />
+        <span className="run-title">{runListTitle(run)}</span>
+        {hasDiffStat(stat) ? <ChangeCounts stat={stat} /> : <span className="chat-age">{formatRelativeAge(runTimestamp(run))}</span>}
+      </div>
+    );
+  };
+
+  if (buddy) {
+    return (
+      <aside className="sidebar">
+        <div className="sidebar-head">
+          <div className="brand">
+            <span className="mark">
+              <BuddyMascot size={30} compact />
+            </span>
+            <div>
+              <strong>Neo</strong>
+              <span>Web v1</span>
+            </div>
           </div>
+          {onClose ? (
+            <button className="icon-btn sidebar-close" id="sidebar-close" type="button" aria-label="关闭" onClick={onClose}>
+              <IconClose />
+            </button>
+          ) : null}
         </div>
+        {WEB_V1.deskUi && onTarget ? <BuddyTargetToggle value={target} deskDisabled={deskDisabled} wide onChange={onTarget} /> : null}
+        <nav className="buddy-nav" aria-label="目录">
+          {(
+            [
+              ["experts", "专家", IconExperts],
+              ["projects", "项目", IconProjects],
+              ["skills", "技能", IconSkills],
+            ] as const
+          ).map(([id, label, Icon]) => (
+            <button key={id} type="button" onClick={() => onOpenNav?.(id)}>
+              <Icon size={18} />
+              <span>{label}</span>
+              <BuddyIcon name="chevron" size={16} />
+            </button>
+          ))}
+        </nav>
+        <div className="buddy-task-head">
+          <span>任务</span>
+          {onArchiveMany ? (
+            <button
+              type="button"
+              onClick={() => {
+                setSelecting((value) => !value);
+                setSelected([]);
+              }}
+            >
+              {selecting ? "取消" : "编辑"}
+            </button>
+          ) : null}
+        </div>
+        <button className="new-chat" id="new-chat" type="button" onClick={onNewChat}>
+          <span className="new-chat-plus" aria-hidden="true">
+            <IconPlus size={14} />
+          </span>
+          新建任务
+        </button>
+        <div className="run-tools">
+          <input
+            type="search"
+            className="run-search"
+            placeholder="搜索任务"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            aria-label="搜索任务"
+          />
+          {onArchiveMany && selecting ? (
+            <div className="run-tools-actions">
+              {selected.length > 0 ? (
+                <button
+                  type="button"
+                  className="toolbar-btn is-ready"
+                  onClick={() => {
+                    onArchiveMany(selected);
+                    setSelected([]);
+                    setSelecting(false);
+                  }}
+                >
+                  归档 {selected.length} 条
+                </button>
+              ) : null}
+            </div>
+          ) : null}
+        </div>
+        <div className="run-list" id="run-list">
+          {grouped.pinned.length > 0 ? (
+            <section className="run-group">
+              <p className="eyebrow">置顶</p>
+              {grouped.pinned.map(renderBuddyRun)}
+            </section>
+          ) : null}
+          {grouped.sections.map((section) =>
+            section.active.length + section.recent.length === 0 ? null : (
+              <section key={section.key} className="run-group">
+                <p className="eyebrow">{section.label}</p>
+                {section.active.map(renderBuddyRun)}
+                {section.recent.map(renderBuddyRun)}
+              </section>
+            ),
+          )}
+          {shelved.length > 0 ? (
+            <details className="run-group run-archived">
+              <summary className="eyebrow">已归档 · {shelved.length}</summary>
+              {shelved.map(renderBuddyRun)}
+            </details>
+          ) : null}
+        </div>
+        <footer className="sidebar-foot">
+          <div className="account" id="account">
+            <span id="account-email">{userEmail || (authBusy ? "登录中…" : "未登录")}</span>
+            <button type="button" id="login" hidden={authed} onClick={onLogin}>
+              登录
+            </button>
+            <button type="button" id="logout" hidden={!authed} onClick={onLogout}>
+              退出
+            </button>
+          </div>
+          <span id="health">{health}</span>
+        </footer>
+      </aside>
+    );
+  }
+
+  const name = accountName(userEmail || (authBusy ? "…" : "Account"));
+
+  return (
+    <aside className="sidebar agents-sidebar">
+      <div className="sidebar-head">
+        <button type="button" className="brand brand-home" onClick={onNewChat} aria-label="Home">
+          <span className="mark">
+            <IconMark size={16} />
+          </span>
+        </button>
+        {onCollapse ? (
+          <button className="icon-btn sidebar-collapse" type="button" aria-label="Collapse sidebar" onClick={onCollapse}>
+            <IconSidebarClose size={16} />
+          </button>
+        ) : null}
         {onClose ? (
           <button className="icon-btn sidebar-close" id="sidebar-close" type="button" aria-label="关闭" onClick={onClose}>
             <IconClose />
           </button>
         ) : null}
       </div>
-      {buddy ? (
-        <>
-          {WEB_V1.deskUi && onTarget ? <BuddyTargetToggle value={target} deskDisabled={deskDisabled} wide onChange={onTarget} /> : null}
-          <nav className="buddy-nav" aria-label="目录">
-            {(
-              [
-                ["experts", "专家", IconExperts],
-                ["projects", "项目", IconProjects],
-                ["skills", "技能", IconSkills],
-              ] as const
-            ).map(([id, label, Icon]) => (
-              <button key={id} type="button" onClick={() => onOpenNav?.(id)}>
-                <Icon size={18} />
-                <span>{label}</span>
-                <BuddyIcon name="chevron" size={16} />
-              </button>
-            ))}
-          </nav>
-          <div className="buddy-task-head">
-            <span>任务</span>
-            {onArchiveMany ? (
-              <button
-                type="button"
-                onClick={() => {
-                  setSelecting((value) => !value);
-                  setSelected([]);
-                }}
-              >
-                {selecting ? "取消" : "编辑"}
-              </button>
-            ) : null}
-          </div>
-        </>
-      ) : null}
-      <button className="new-chat" id="new-chat" type="button" onClick={onNewChat}>
+      <button
+        className={`new-chat${home ? " is-current" : ""}`}
+        id="new-chat"
+        type="button"
+        aria-current={home ? "page" : undefined}
+        onClick={onNewChat}
+      >
         <span className="new-chat-plus" aria-hidden="true">
-          <IconPlus size={14} />
+          <IconNewChat size={16} />
         </span>
-        {buddy ? "新建任务" : "新对话"}
+        New Chat
       </button>
-      {buddy ? null : (
-        <VmSlots slots={slots} backend={backend} currentRunId={currentRunId} runs={runs} onOpenRun={onOpenRun} />
-      )}
-      <div className="run-tools">
-        <input
-          type="search"
-          className="run-search"
-          placeholder={buddy ? "搜索任务" : "搜索对话"}
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          aria-label={buddy ? "搜索任务" : "搜索对话"}
-        />
-        {onArchiveMany && (!buddy || selecting) ? (
-          <div className="run-tools-actions">
-            {selecting && selected.length > 0 ? (
-              <button
-                type="button"
-                className="toolbar-btn is-ready"
-                onClick={() => {
-                  onArchiveMany(selected);
-                  setSelected([]);
-                  setSelecting(false);
-                }}
-              >
-                归档 {selected.length} 条
-              </button>
-            ) : null}
-            {buddy ? null : (
-              <button
-                type="button"
-                className={selecting ? "toolbar-btn is-on" : "toolbar-btn"}
-                onClick={() => {
-                  setSelecting((value) => !value);
-                  setSelected([]);
-                }}
-              >
-                {selecting ? "取消" : "批量归档"}
-              </button>
-            )}
-          </div>
-        ) : null}
-      </div>
-      <div className="run-list" id="run-list">
-        {grouped.pinned.length > 0 ? (
-          <section className="run-group">
-            <p className="eyebrow">置顶</p>
-            {grouped.pinned.map(renderRun)}
-          </section>
-        ) : null}
-        {grouped.sections.map((section) =>
-          section.active.length + section.recent.length === 0 ? null : (
+      <div className="chats-block">
+        <p className="chats-heading">Chats</p>
+        <div className="run-list" id="run-list">
+          {timed.map((section) => (
             <section key={section.key} className="run-group">
               <p className="eyebrow">{section.label}</p>
-              {section.active.map(renderRun)}
-              {section.recent.map(renderRun)}
+              {section.runs.map(renderChatRow)}
             </section>
-          ),
-        )}
-        {shelved.length > 0 ? (
-          <details className="run-group run-archived">
-            <summary className="eyebrow">已归档 · {shelved.length}</summary>
-            {shelved.map(renderRun)}
-          </details>
-        ) : null}
+          ))}
+        </div>
       </div>
       <footer className="sidebar-foot">
-        <div className="account" id="account">
-          <span id="account-email">{userEmail || (authBusy ? "登录中…" : "未登录")}</span>
-          <button type="button" id="login" hidden={authed} onClick={onLogin}>
-            登录
-          </button>
-          <button type="button" id="logout" hidden={!authed} onClick={onLogout}>
-            退出
-          </button>
+        <div className="account account-card" id="account" title={health}>
+          <span className="account-avatar" aria-hidden="true">
+            {accountInitials(userEmail)}
+          </span>
+          <div className="account-copy">
+            <strong id="account-email">{name}</strong>
+            <small>Web v1</small>
+          </div>
+          <details className="account-menu">
+            <summary aria-label="Account menu">···</summary>
+            <div className="account-menu-pop">
+              {onOpenSettings ? (
+                <button type="button" onClick={onOpenSettings}>
+                  <IconGear size={14} />
+                  Settings
+                </button>
+              ) : null}
+              <button type="button" id="login" hidden={authed} onClick={onLogin}>
+                登录
+              </button>
+              <button type="button" id="logout" hidden={!authed} onClick={onLogout}>
+                Log out
+              </button>
+            </div>
+          </details>
         </div>
-        <span id="health">{health}</span>
+        <span id="health" hidden>
+          {health}
+        </span>
       </footer>
     </aside>
   );
