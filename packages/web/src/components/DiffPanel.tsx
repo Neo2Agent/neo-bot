@@ -15,7 +15,7 @@ export function DiffPanel({ open, chrome = "default", loading, error, stat, patc
   return (
     <section className={`diff-panel${chrome === "git" ? " is-git" : ""}`} id="run-diff">
       {chrome === "git" ? null : <strong>本轮 Diff</strong>}
-      {chrome !== "git" && onCommit && (stat || patch || loading) ? (}
+      {chrome !== "git" && onCommit && (stat || patch || loading) ? (
         <form
           className="diff-commit"
           onSubmit={(event) => {
