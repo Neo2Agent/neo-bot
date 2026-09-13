@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { Run } from "@neo-bot/contracts/run";
 import { api, readJson } from "./api";
-import { parseDiffStat, recentAgentRuns, runTimestamp, type DiffStat } from "./agents-home";
+import { hasDiffStat, parseDiffStat, recentAgentRuns, runTimestamp, type DiffStat } from "./agents-home";
 import { isShelvedRun } from "./pins";
 
 const MAX_RUNS = 20;
@@ -55,7 +55,7 @@ export function useRunDiffStats(token: string, runs: Run[], enabled: boolean): R
               if (!response.ok) return;
               const body = await readJson<{ stat?: string }>(response);
               const stat = parseDiffStat(body.stat ?? "");
-              cacheRef.current[run.id] = { stamp, stat };
+              if (hasDiffStat(stat)) cacheRef.current[run.id] = { stamp, stat };
               next[run.id] = stat;
             } catch {
               // list chrome stays up if a workspace has no diff
