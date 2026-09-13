@@ -16,10 +16,11 @@ import { WEB_V1 } from "./scope";
 import { deskBridge, isDeskApp, withApiBase, type DeskTarget } from "./desk";
 import { remoteControlSendLock } from "./desk-live";
 import { readPinnedRuns, togglePinnedRun } from "./pins";
-import { readLastRunId, readLastTarget, writeLastRunId, writeLastTarget } from "./prefs";
+import { readLastTarget, writeLastRunId, writeLastTarget } from "./prefs";
 import { cloudSafeRepoUrls, isLocalFolderRef } from "./repo";
 import { cycle, shortcutAction } from "./shortcuts";
 import { applyLiveEvents, parseSseData } from "./stream-apply";
+import { AgentsHome } from "./components/AgentsHome";
 import { AuthGate, type AuthMode } from "./components/AuthGate";
 import { ChatErrorBoundary } from "./components/ChatErrorBoundary";
 import { ArtifactsPanel } from "./components/ArtifactsPanel";
@@ -71,6 +72,7 @@ import {
   withQueuedNotice,
   type PendingUser,
 } from "./turn";
+import { useRunDiffStats } from "./use-run-diff-stats";
 import { NARROW_MQ, closeMobileSidebar, isNarrowViewport } from "./viewport";
 
 const HISTORY_PAGE = DEFAULT_TRANSCRIPT_PAGE;
@@ -682,6 +684,7 @@ export function App() {
     setHighlightId(null);
     setMoreOpen(false);
     setPlusOpen(false);
+    writeLastRunId(null);
     history.replaceState(null, "", "/");
   }, [closeStream]);
 
@@ -914,7 +917,7 @@ export function App() {
       await Promise.all(refreshShell);
       return;
     }
-    const match = hashRunId() || readLastRunId();
+    const match = hashRunId();
     await Promise.all([
       refreshRuns(),
       match ? openRun(match) : Promise.resolve(),
@@ -1798,9 +1801,12 @@ export function App() {
     });
   };
 
+  const agentsHome = !narrow && mainTab === "chat" && !runId;
+  const diffStats = useRunDiffStats(token, runs, Boolean(token) && !narrow);
+
   return (
     <>
-      <div className={`${sidebarOpen ? "app" : "app sidebar-closed"}${narrow ? " is-buddy" : ""}`}>
+      <div className={`${sidebarOpen ? "app" : "app sidebar-closed"}${narrow ? " is-buddy" : ""}${agentsHome ? " is-agents-home" : ""}`}>
         {sidebarOpen ? <div className="sidebar-backdrop" id="sidebar-backdrop" onClick={toggleSidebar} /> : null}
         <Sidebar
           runs={runs}
@@ -1813,6 +1819,10 @@ export function App() {
           health={healthText}
           pinnedIds={pinnedIds}
           projectNames={projectNames}
+          diffStats={diffStats}
+          home={agentsHome}
+          onCollapse={narrow ? undefined : toggleSidebar}
+          onOpenSettings={openSettings}
           buddy={narrow}
           target={deskTarget.kind === "desk" ? "desk" : "cloud"}
           deskDisabled={!deskBridge()?.canRunLocal && !desks.some((desk) => desk.online && desk.allowRemote === true && (desk.workspaces?.length ?? 0) > 0)}
@@ -2393,6 +2403,53 @@ export function App() {
                     : undefined
                 }
               />
+            ) : agentsHome ? (
+              <AgentsHome
+                runs={runs}
+                stats={diffStats}
+                onOpenRun={(id) => {
+                  setMainTab("chat");
+                  void openRun(id);
+                }}
+              >
+                <Composer
+                  prompt={prompt}
+                  images={images}
+                  vmHint=""
+                  busy={busy}
+                  stopping={stopping}
+                  archived={archived}
+                  canStop={false}
+                  activity={activity}
+                  target={deskTarget}
+                  mode={agentMode}
+                  model={selectedModel}
+                  experts={experts}
+                  teams={teams}
+                  expertValue={encodeExpertPick(expertPick)}
+                  mentions={composerMentions}
+                  showCapsules={false}
+                  onMention={applyMention}
+                  onTarget={applyTarget}
+                  onMode={setAgentMode}
+                  onExpert={(value) => setExpertPick(decodeExpertPick(value))}
+                  onModel={(value) =>
+                    setLlm((prev) => ({
+                      ...prev,
+                      model: value,
+                      upstream: /gpt/i.test(value) ? "openai" : "deepseek",
+                    }))
+                  }
+                  onPrompt={setPrompt}
+                  onImages={setImages}
+                  onSend={() => void sendMessage()}
+                  onQueue={() => void queueMessage()}
+                  onStop={stopTurn}
+                  layout="home"
+                  followUp={false}
+                  onOpenPlus={() => imagePickRef.current?.click()}
+                />
+              </AgentsHome>
             ) : (
               <ChatErrorBoundary onReset={() => (runId ? void openRun(runId) : resetComposer())}>
                 {shouldShowBuddyHome({
@@ -2439,7 +2496,7 @@ export function App() {
             )}
           </div>
           </div>
-          {mainTab === "chat" && (activeProject || expertPick.expertId || expertPick.expertTeamId || pluginPick) ? (
+          {mainTab === "chat" && !agentsHome && (activeProject || expertPick.expertId || expertPick.expertTeamId || pluginPick) ? (
             <div className="proj-chip-bar" id="project-chip">
               {activeProject ? (
                 <span className="proj-chip">
@@ -2477,7 +2534,7 @@ export function App() {
               ) : null}
             </div>
           ) : null}
-          {mainTab === "chat" ? (
+          {mainTab === "chat" && !agentsHome ? (
             <Composer
               prompt={prompt}
               images={images}

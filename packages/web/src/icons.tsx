@@ -5,6 +5,7 @@ import {
   BookOpen,
   Bot,
   Check,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
   CircleAlert,
@@ -54,6 +55,19 @@ const stroke: Pick<LucideProps, "strokeWidth"> = { strokeWidth: 1.75 };
 
 function icon(Icon: typeof Search, props: IconProps) {
   return <Icon {...stroke} size={props.size ?? 16} className={props.className} aria-hidden="true" />;
+}
+
+export function IconMark(props: IconProps) {
+  const size = props.size ?? 16;
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" className={props.className} fill="currentColor" aria-hidden="true">
+      <path d="M8.2 1.4 14.7 13.8a.7.7 0 0 1-.62 1.02H1.92a.7.7 0 0 1-.62-1.02L7.8 1.4a.7.7 0 0 1 1.22 0Z" />
+    </svg>
+  );
+}
+
+export function IconChevronDown(props: IconProps) {
+  return icon(ChevronDown, props);
 }
 
 export function IconNewChat(props: IconProps) {

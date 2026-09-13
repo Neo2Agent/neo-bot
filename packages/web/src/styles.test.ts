@@ -20,6 +20,31 @@ test("web shell keeps the original cool-gray chrome", () => {
   assert.match(css, /\.term-shell\s*\{/);
 });
 
+test("agents home uses the locked Cursor /agents tokens", () => {
+  assert.match(css, /--stage:\s*#f7f7f7/);
+  assert.match(css, /--rail:\s*#f3f3f3/);
+  assert.match(css, /--line:\s*#e5e5e5/);
+  assert.match(css, /--text:\s*#2b2b2b/);
+  assert.match(css, /--muted:\s*#737373/);
+  assert.match(css, /--btn-primary:\s*#111111/);
+  assert.match(css, /--ok:\s*#1f8a4c/);
+  assert.match(css, /--merged:\s*#7c3aed/);
+  assert.match(css, /--err:\s*#d92d20/);
+  assert.match(css, /grid-template-columns:\s*220px minmax\(0, 1fr\)/);
+  assert.match(css, /\.agents-landing/);
+  assert.match(css, /\.agents-hero/);
+  assert.match(css, /\.composer\.agents-composer/);
+  assert.match(css, /max-width:\s*510px/);
+  assert.match(css, /min\(600px/);
+  assert.match(css, /\.agent-card/);
+  assert.match(css, /\.agent-badge\.is-open/);
+  assert.match(css, /\.agent-badge\.is-merged/);
+  assert.doesNotMatch(css, /Codebase Early Beta/);
+  assert.doesNotMatch(css, /Create an Automation/);
+  assert.doesNotMatch(css, /Try Commands/);
+  assert.doesNotMatch(css, /Grok promo/);
+});
+
 test("welcome cluster fits a 14-inch laptop viewport without a page scroll", () => {
   assert.match(css, /\.transcript\s*\{[^}]*container-name:\s*transcript/);
   assert.match(css, /\.empty h2\s*\{[^}]*margin:\s*0 0 8px/);

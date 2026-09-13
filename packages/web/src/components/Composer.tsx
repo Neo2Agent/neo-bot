@@ -59,7 +59,7 @@ type Props = {
   onSend: () => void;
   onQueue?: () => void;
   onStop?: () => void;
-  layout?: "default" | "buddy";
+  layout?: "default" | "buddy" | "home";
   followUp?: boolean;
   onOpenPlus?: () => void;
 };
@@ -121,6 +121,7 @@ export function Composer({
   const promptRef = useRef(prompt);
   promptRef.current = prompt;
   const buddy = layout === "buddy";
+  const home = layout === "home";
   useEffect(() => () => {
     void voiceRef.current?.stop();
   }, []);
@@ -157,7 +158,9 @@ export function Composer({
           ? followUp
             ? "继续说一句…"
             : "说说你要做什么"
-          : isNarrowViewport()
+          : home
+            ? "Ask Neo to build, fix bugs, explore"
+            : isNarrowViewport()
             ? "描述任务，点发送。可粘贴图片。"
             : "描述任务。Enter 发送，Shift+Enter 换行。输入 @ 可点专家、技能或资产。";
   const canStartVoice = !sendLocked && !busy && !finishing;
@@ -230,7 +233,7 @@ export function Composer({
   );
   return (
     <form
-      className={`${busy ? "composer is-busy" : sendLocked ? "composer is-locked" : "composer"}${buddy ? " buddy-composer" : ""}`}
+      className={`${busy ? "composer is-busy" : sendLocked ? "composer is-locked" : "composer"}${buddy ? " buddy-composer" : ""}${home ? " agents-composer" : ""}`}
       id="composer"
       aria-busy={busy}
       onSubmit={(event: FormEvent) => {
@@ -267,7 +270,7 @@ export function Composer({
       <textarea
         id="prompt"
         name="prompt"
-        rows={buddy ? 2 : isNarrowViewport() ? 2 : 3}
+        rows={buddy || home ? 2 : isNarrowViewport() ? 2 : 3}
         placeholder={placeholder}
         required={!busy && !sendLocked && images.length === 0}
         disabled={archived}
@@ -316,7 +319,7 @@ export function Composer({
           )}
         </ul>
       ) : null}
-      {capsules.length > 0 && !trigger ? (
+      {capsules.length > 0 && !trigger && !home ? (
         <div className="intent-capsules">
           {capsules.map((item) => (
             <button key={item.id} type="button" className="intent-capsule" onClick={() => onCapsule?.(item)}>
@@ -325,7 +328,36 @@ export function Composer({
           ))}
         </div>
       ) : null}
-      {buddy ? (
+      {home ? (
+        <div className="composer-bar agents-composer-bar">
+          <button type="button" className="composer-plus" aria-label="Add" onClick={onOpenPlus}>
+            <IconPlus size={18} />
+          </button>
+          <Select
+            id="agent-model"
+            size="pill"
+            aria-label="模型"
+            value={model}
+            onValueChange={onModel}
+            options={models.map((item) => ({ value: item.id, label: item.label }))}
+          />
+          <div className="composer-send-group">
+            {busy && canStop ? (
+              <button type="button" id="abort" className="stop" aria-label={stopping ? "停止中" : "停止生成"} onClick={onStop}>
+                <span className="stop-icon" aria-hidden="true" />
+              </button>
+            ) : empty ? (
+              <button type="button" className="composer-voice" aria-label="Voice" disabled>
+                <IconMic size={16} />
+              </button>
+            ) : (
+              <button type="submit" id="send" className="send" disabled={sendLocked || busy} aria-label={busy ? "发送中" : "发送"}>
+                <IconArrowUp size={16} />
+              </button>
+            )}
+          </div>
+        </div>
+      ) : buddy ? (
         <div className="buddy-composer-bar">
           <div className="buddy-composer-bar-start">
             <button type="button" className="buddy-plus" aria-label="添加" onClick={onOpenPlus}>
