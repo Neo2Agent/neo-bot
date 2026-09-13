@@ -87,9 +87,10 @@ function ToolCard({ tool }: { tool: TranscriptTool }) {
     <details
       className={`${tool.isError ? "tool err" : running ? "tool run" : "tool"}${subagent ? " subagent" : ""}`}
       data-tool={tool.name}
-      open={running || Boolean(diff)}
+      {...(running ? { open: true } : {})}
     >
       <summary>
+        <span className="tool-chevron" aria-hidden="true" />
         <span className="tool-name">
           <ToolStatus tool={tool} />
           <IconTool name={tool.name} size={14} />
@@ -234,8 +235,17 @@ export function Transcript({
         <header className="run-head">
           <h1 id="run-conversation-title">{title}</h1>
           {repo ? <p className="run-head-repo">{repo}</p> : null}
-          {environment ? <p className="run-env">{environment}</p> : null}
-          {workedFor ? <p className="run-worked">{workedFor}</p> : null}
+          {environment || workedFor ? (
+            <p className="run-meta">
+              {environment ? (
+                <span className={`run-env${environment.endsWith("failed") ? " is-fail" : " is-ready"}`}>
+                  {environment.endsWith("failed") ? <IconError size={12} /> : <IconCheck size={12} />}
+                  {environment}
+                </span>
+              ) : null}
+              {workedFor ? <span className="run-worked">{workedFor}</span> : null}
+            </p>
+          ) : null}
         </header>
       ) : null}
     <section

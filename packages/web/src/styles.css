@@ -5727,27 +5727,38 @@ html.is-narrow,
 
 .app.is-run-detail .transcript-shell .run-head {
   flex: 0 0 auto;
-  padding: 18px 28px 8px;
+  padding: 12px 28px 2px;
   background: var(--stage);
 }
 
 .app.is-run-detail .transcript {
   background: var(--stage);
-  padding: 8px 28px 12px;
+  padding: 4px 28px 12px;
 }
 
 .app.is-run-detail .transcript-col {
   width: 100%;
   max-width: none;
   margin: 0;
-  gap: 14px;
+  gap: 8px;
+}
+
+.app.is-run-detail .setup {
+  font-size: 12px;
+  line-height: 1.25;
+  gap: 6px;
+}
+
+.app.is-run-detail .setup .setup-time,
+.app.is-run-detail .bubble-time {
+  font-size: 11px;
 }
 
 .run-head {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  padding: 4px 0 8px;
+  gap: 2px;
+  padding: 4px 0 6px;
 }
 
 .run-head h1,
@@ -5762,13 +5773,44 @@ html.is-narrow,
   text-overflow: unset;
 }
 
-.run-head-repo,
+.run-head-repo {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.3;
+}
+
+.run-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 2px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.2;
+}
+
 .run-env,
 .run-worked {
   margin: 0;
   color: var(--muted);
-  font-size: 13px;
-  line-height: 1.45;
+  font-size: 12px;
+  line-height: 1.2;
+}
+
+.run-env {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.run-env.is-ready {
+  color: var(--ok);
+}
+
+.run-env.is-fail {
+  color: var(--err);
 }
 
 .app.is-run-detail .bubble.user {
@@ -5789,18 +5831,56 @@ html.is-narrow,
   font-size: 15px;
 }
 
+.app.is-run-detail .tool-stack {
+  gap: 1px;
+}
+
 .app.is-run-detail .tool {
   margin: 0;
-  padding: 6px 8px;
+  padding: 2px 6px;
   border: 0;
-  border-radius: 8px;
+  border-radius: 6px;
   background: transparent;
   color: var(--text);
-  font-size: 13px;
+  font-family: inherit;
+  font-size: 12px;
 }
 
 .app.is-run-detail .tool:hover {
   background: #ececec;
+}
+
+.app.is-run-detail .tool summary {
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 6px;
+  min-height: 24px;
+}
+
+.tool-chevron {
+  display: none;
+}
+
+.app.is-run-detail .tool-chevron {
+  display: inline-block;
+  flex: 0 0 auto;
+  width: 0;
+  height: 0;
+  border-top: 3px solid transparent;
+  border-bottom: 3px solid transparent;
+  border-left: 4px solid var(--muted);
+}
+
+.app.is-run-detail .tool[open] .tool-chevron {
+  border-left: 3px solid transparent;
+  border-right: 3px solid transparent;
+  border-top: 4px solid var(--muted);
+  border-bottom: 0;
+}
+
+.app.is-run-detail .tool .cmd {
+  color: var(--muted);
+  font-size: 12px;
 }
 
 .app.is-run-detail .tool.run,
@@ -5814,6 +5894,12 @@ html.is-narrow,
 
 .app.is-run-detail .tool.subagent {
   border-left: 2px solid #d4d4d4;
+}
+
+.app.is-run-detail .tool pre,
+.app.is-run-detail .tool .tool-diff {
+  margin-top: 4px;
+  max-height: 200px;
 }
 
 .files-changed {
@@ -6026,8 +6112,51 @@ html.is-narrow,
   max-height: none;
 }
 
+.git-pane .artifacts-panel.is-git {
+  padding: 8px 12px 12px;
+}
+
+.git-pane .artifact-list {
+  margin: 0;
+  gap: 1px;
+}
+
+.git-pane .artifact-row {
+  min-height: 32px;
+  padding: 4px 8px;
+  border-radius: 6px;
+}
+
+.git-pane .artifact-copy {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+}
+
+.git-pane .artifact-name {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.git-pane .artifact-copy small {
+  font-size: 11px;
+}
+
+.git-pane .artifact-glyph {
+  width: 24px;
+  height: 24px;
+  flex-basis: 24px;
+  border-radius: 6px;
+  background: #f7f7f7;
+}
+
 .git-pane .artifact-row:hover,
 .git-pane .artifact-list li.is-on .artifact-row {
-  background: var(--bg-2);
+  background: #ececec;
   box-shadow: none;
+}
+
+.git-pane .artifact-preview {
+  margin-top: 8px;
+  border-radius: 8px;
 }
