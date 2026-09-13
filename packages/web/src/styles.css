@@ -5712,9 +5712,28 @@ html.is-narrow,
   background: var(--stage);
 }
 
+.transcript-shell {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.transcript-shell .transcript {
+  flex: 1;
+  min-height: 0;
+}
+
+.app.is-run-detail .transcript-shell .run-head {
+  flex: 0 0 auto;
+  padding: 18px 28px 8px;
+  background: var(--stage);
+}
+
 .app.is-run-detail .transcript {
   background: var(--stage);
-  padding: 22px 28px 12px;
+  padding: 8px 28px 12px;
 }
 
 .app.is-run-detail .transcript-col {

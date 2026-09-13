@@ -227,7 +227,17 @@ export function Transcript({
     onLoadOlder();
   };
 
+  const fileCount = files.length || diffStat?.files || 1;
   return (
+    <div className={`transcript-shell${title ? " has-run-head" : ""}`}>
+      {title ? (
+        <header className="run-head">
+          <h1 id="run-conversation-title">{title}</h1>
+          {repo ? <p className="run-head-repo">{repo}</p> : null}
+          {environment ? <p className="run-env">{environment}</p> : null}
+          {workedFor ? <p className="run-worked">{workedFor}</p> : null}
+        </header>
+      ) : null}
     <section
       className="transcript"
       id="transcript"
@@ -255,14 +265,6 @@ export function Transcript({
             <div className="skel skel-ai" />
             <div className="skel skel-ai short" />
           </div>
-        ) : null}
-        {title ? (
-          <header className="run-head">
-            <h1 id="run-conversation-title">{title}</h1>
-            {repo ? <p className="run-head-repo">{repo}</p> : null}
-            {environment ? <p className="run-env">{environment}</p> : null}
-            {workedFor ? <p className="run-worked">{workedFor}</p> : null}
-          </header>
         ) : null}
         {empty ? (
           <div className="empty">
@@ -384,7 +386,9 @@ export function Transcript({
         {!empty && !loading && (files.length > 0 || hasDiffStat(diffStat) || Boolean(diffPatch.trim())) ? (
           <details className="files-changed" open>
             <summary>
-              <span>{files.length || diffStat?.files || 1} Files Changed</span>
+              <span>
+                {fileCount} {fileCount === 1 ? "File" : "Files"} Changed
+              </span>
               {hasDiffStat(diffStat) && diffStat ? (
                 <span className="change-counts">
                   {diffStat.added > 0 ? <span className="change-add">+{diffStat.added}</span> : null}
@@ -430,5 +434,6 @@ export function Transcript({
         ) : null}
       </div>
     </section>
+    </div>
   );
 }
