@@ -157,6 +157,63 @@ function MessageTime({ message, className = "" }: { message: TranscriptMessage; 
   );
 }
 
+function setupFailed(message: TranscriptMessage): boolean {
+  return message.level === "error" || String(message.kind).endsWith("_failed") || message.kind === "run.error";
+}
+
+function SetupLine({
+  message,
+  highlightId,
+  onOpenDiagnostics,
+}: {
+  message: TranscriptMessage;
+  highlightId?: string | null;
+  onOpenDiagnostics?: () => void;
+}) {
+  const failed = setupFailed(message);
+  return (
+    <p
+      id={`msg-${message.id}`}
+      className={failed ? "setup err" : "setup"}
+      data-highlight={highlightId === message.id ? "true" : undefined}
+    >
+      <span>{message.text}</span>
+      {failed && onOpenDiagnostics ? (
+        <button type="button" className="ghost diag-link" onClick={onOpenDiagnostics}>
+          查看诊断
+        </button>
+      ) : null}
+      <time className="bubble-time setup-time" dateTime={message.createdAt}>
+        {formatWhen(message.createdAt)}
+      </time>
+    </p>
+  );
+}
+
+function SetupFold({
+  messages,
+  highlightId,
+  onOpenDiagnostics,
+}: {
+  messages: TranscriptMessage[];
+  highlightId?: string | null;
+  onOpenDiagnostics?: () => void;
+}) {
+  const failed = messages.some(setupFailed);
+  return (
+    <details className={failed ? "setup-fold is-fail" : "setup-fold"} open={failed}>
+      <summary>
+        {failed ? <IconError size={12} /> : <IconCheck size={12} />}
+        <span>{failed ? "Setup failed" : "Setup"}</span>
+        <span className="setup-fold-count">{messages.length}</span>
+      </summary>
+      {messages.map((message) => (
+        <SetupLine key={message.id} message={message} highlightId={highlightId} onOpenDiagnostics={onOpenDiagnostics} />
+      ))}
+    </details>
+  );
+}
+
 function ArtifactCard({ message }: { message: TranscriptMessage }) {
   const href = message.href;
   const image = Boolean(href && message.mediaType?.startsWith("image/"));
@@ -243,6 +300,7 @@ export function Transcript({
                   {environment}
                 </span>
               ) : null}
+              {environment && workedFor ? <span className="run-meta-sep" aria-hidden="true">·</span> : null}
               {workedFor ? <span className="run-worked">{workedFor}</span> : null}
             </p>
           ) : null}
@@ -299,24 +357,33 @@ export function Transcript({
               return <ArtifactCard key={message.id} message={message} />;
             }
             if (message.role === "setup") {
-              const failed = message.level === "error" || String(message.kind).endsWith("_failed") || message.kind === "run.error";
+              if (title) {
+                const prev = messages[messageIndex - 1];
+                if (prev?.role === "setup" && prev.kind !== "artifact.uploaded") {
+                  return null;
+                }
+                const group = [message];
+                for (let index = messageIndex + 1; index < messages.length; index += 1) {
+                  const next = messages[index];
+                  if (next.role !== "setup" || next.kind === "artifact.uploaded") break;
+                  group.push(next);
+                }
+                return (
+                  <SetupFold
+                    key={group[0]?.id}
+                    messages={group}
+                    highlightId={highlightId}
+                    onOpenDiagnostics={onOpenDiagnostics}
+                  />
+                );
+              }
               return (
-                <p
+                <SetupLine
                   key={message.id}
-                  id={`msg-${message.id}`}
-                  className={failed ? "setup err" : "setup"}
-                  data-highlight={highlightId === message.id ? "true" : undefined}
-                >
-                  <span>{message.text}</span>
-                  {failed && onOpenDiagnostics ? (
-                    <button type="button" className="ghost diag-link" onClick={onOpenDiagnostics}>
-                      查看诊断
-                    </button>
-                  ) : null}
-                  <time className="bubble-time setup-time" dateTime={message.createdAt}>
-                    {formatWhen(message.createdAt)}
-                  </time>
-                </p>
+                  message={message}
+                  highlightId={highlightId}
+                  onOpenDiagnostics={onOpenDiagnostics}
+                />
               );
             }
             if (message.role === "user") {

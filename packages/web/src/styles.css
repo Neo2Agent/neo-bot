@@ -5754,6 +5754,42 @@ html.is-narrow,
   font-size: 11px;
 }
 
+.setup-fold {
+  align-self: flex-start;
+}
+
+.setup-fold > summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  list-style: none;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.2;
+}
+
+.setup-fold > summary::-webkit-details-marker {
+  display: none;
+}
+
+.setup-fold.is-fail > summary {
+  color: var(--err);
+}
+
+.setup-fold-count {
+  color: var(--muted);
+}
+
+.setup-fold .setup {
+  margin-top: 4px;
+  padding-left: 2px;
+}
+
+.run-meta-sep {
+  color: var(--muted);
+}
+
 .run-head {
   display: flex;
   flex-direction: column;

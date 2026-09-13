@@ -52,6 +52,7 @@ test("run conversation uses a three-column Cursor-like chrome", () => {
   assert.match(css, /\.git-pane/);
   assert.match(css, /\.run-head/);
   assert.match(css, /\.run-meta/);
+  assert.match(css, /\.setup-fold/);
   assert.match(css, /\.app\.is-run-detail \.setup/);
   assert.match(css, /\.app\.is-run-detail \.tool-stack/);
   assert.match(css, /\.app\.is-run-detail \.tool-chevron/);
