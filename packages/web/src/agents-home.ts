@@ -101,7 +101,7 @@ export function accountInitials(email: string): string {
   const name = accountName(email);
   const parts = name.split(/[.\s_-]+/).filter(Boolean);
   if (parts.length >= 2) return `${parts[0]![0] ?? ""}${parts[1]![0] ?? ""}`.toUpperCase();
-  return name.slice(0, 2).toUpperCase() || "N";
+  return name.slice(0, 1).toUpperCase() || "N";
 }
 
 export function chatStatusTone(status: string): "run" | "ok" | "err" | "idle" {

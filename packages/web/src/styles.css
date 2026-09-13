@@ -5118,9 +5118,12 @@ html.is-narrow,
   box-shadow: none;
 }
 
-.agents-sidebar .new-chat.is-current,
+.agents-sidebar .new-chat.is-current {
+  background: #e8e8e8;
+}
+
 .agents-sidebar .new-chat:hover {
-  background: color-mix(in srgb, var(--text) 6%, #fff);
+  background: #ececec;
 }
 
 .agents-sidebar .new-chat-plus {
@@ -5390,10 +5393,10 @@ html.is-narrow,
 }
 
 .agents-context {
-  margin: 0;
+  margin: 0 0 2px 4px;
   color: var(--muted);
   font-size: 13px;
-  text-align: center;
+  text-align: left;
 }
 
 .composer.agents-composer {
@@ -5409,9 +5412,9 @@ html.is-narrow,
 }
 
 .composer.agents-composer textarea {
-  min-height: 56px;
+  min-height: 72px;
   max-height: 160px;
-  padding: 4px 4px 8px;
+  padding: 6px 4px 12px;
   color: var(--text);
 }
 
@@ -5451,7 +5454,9 @@ html.is-narrow,
   box-shadow: none;
 }
 
-.composer.agents-composer button.send {
+.composer.agents-composer button.send,
+.composer.agents-composer button.send:disabled,
+.composer.agents-composer button.send:hover:not(:disabled) {
   width: 32px;
   height: 32px;
   min-height: 32px;
@@ -5459,16 +5464,7 @@ html.is-narrow,
   border-radius: 999px;
   background: var(--btn-primary);
   color: #fff;
-}
-
-.composer.agents-composer button.send:disabled {
-  background: #ececec;
-  color: #b0b0b0;
   opacity: 1;
-}
-
-.composer.agents-composer button.send:hover:not(:disabled) {
-  background: #000;
 }
 
 .agent-cards {
@@ -5482,10 +5478,11 @@ html.is-narrow,
 
 .agent-card {
   display: grid;
-  grid-template-columns: 108px minmax(0, 1fr);
-  gap: 16px;
+  grid-template-columns: 120px minmax(0, 1fr);
+  gap: 18px;
   width: 100%;
-  padding: 16px 18px;
+  min-height: 88px;
+  padding: 18px 20px;
   border: 1px solid var(--line);
   border-radius: 12px;
   background: var(--panel);
@@ -5574,8 +5571,10 @@ html.is-narrow,
   box-shadow: none;
 }
 
-.auth-submit,
-.auth-submit:hover:not(:disabled) {
+.auth-card button.auth-submit,
+.auth-card button.auth-submit:hover:not(:disabled),
+.auth-card button.auth-submit:disabled,
+.auth-card button[type="submit"]:not(.send) {
   background: var(--btn-primary);
   color: #fff;
 }

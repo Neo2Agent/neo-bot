@@ -71,6 +71,7 @@ test("account helpers and card list stay free of desk copy", () => {
   assert.equal(accountName("admin"), "admin");
   assert.equal(accountName("zhou.yang@example.com"), "zhou.yang");
   assert.equal(accountInitials("zhou.yang@example.com"), "ZY");
+  assert.equal(accountInitials("admin"), "A");
   assert.equal(formatFilesLabel(1), "1 file");
   assert.equal(formatFilesLabel(20), "20 files");
   assert.equal(chatStatusTone("RUNNING"), "run");
