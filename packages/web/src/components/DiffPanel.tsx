@@ -15,7 +15,7 @@ export function DiffPanel({ open, chrome = "default", loading, error, stat, patc
   return (
     <section className={`diff-panel${chrome === "git" ? " is-git" : ""}`} id="run-diff">
       {chrome === "git" ? null : <strong>本轮 Diff</strong>}
-      {onCommit && (stat || patch || loading) ? (
+      {chrome !== "git" && onCommit && (stat || patch || loading) ? (}
         <form
           className="diff-commit"
           onSubmit={(event) => {
@@ -35,7 +35,7 @@ export function DiffPanel({ open, chrome = "default", loading, error, stat, patc
       {loading ? <p className="hint">正在对比…</p> : null}
       {error ? <p className="setup err">{error}</p> : null}
       {!loading && !error && !stat && !patch ? <p className="hint">工作区没有可展示的 diff。</p> : null}
-      {stat ? <pre className="diff-stat">{stat}</pre> : null}
+      {stat && !(chrome === "git" && patch) ? <pre className="diff-stat">{stat}</pre> : null}
       {patch ? (
         <pre className="tool-diff">
           {patch.split("\n").map((line, index) => (

@@ -5962,19 +5962,23 @@ html.is-narrow,
 }
 
 .git-tabs {
-  padding: 6px 12px 0;
+  padding: 4px 14px 0;
   border-bottom: 1px solid var(--line);
-  gap: 4px;
+  gap: 2px;
 }
 
 .git-tabs button {
-  border-radius: 8px 8px 0 0;
-  min-height: 32px;
-  padding: 6px 10px;
+  border-radius: 0;
+  min-height: 34px;
+  padding: 8px 12px;
+  color: var(--muted);
+  background: transparent;
   font-size: 13px;
+  font-weight: 500;
 }
 
 .git-tabs button.active {
+  color: var(--text);
   background: transparent;
   box-shadow: inset 0 -2px 0 var(--text);
 }
@@ -5984,7 +5988,7 @@ html.is-narrow,
   flex: 1;
   min-height: 0;
   margin: 0;
-  padding: 10px 14px 16px;
+  padding: 12px 16px 16px;
   border: 0;
   border-radius: 0;
   background: var(--panel);
@@ -5992,7 +5996,7 @@ html.is-narrow,
 }
 
 .git-pane .diff-panel.is-git > strong,
-.git-pane .artifact-head strong {
+.git-pane .artifact-head {
   display: none;
 }
 
