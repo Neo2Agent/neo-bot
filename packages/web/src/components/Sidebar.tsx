@@ -19,6 +19,7 @@ import {
   IconMark,
   IconNewChat,
   IconPlus,
+  IconSidebarOpen,
   IconProjects,
   IconSidebarClose,
   IconSkills,
@@ -50,6 +51,7 @@ type Props = {
   projectNames?: Record<string, string>;
   diffStats?: Record<string, DiffStat>;
   home?: boolean;
+  collapsed?: boolean;
   onNewChat: () => void;
   onOpenRun: (id: string) => void;
   onPin?: (id: string) => void;
@@ -80,6 +82,7 @@ export function Sidebar({
   projectNames = {},
   diffStats = {},
   home = false,
+  collapsed = false,
   onNewChat,
   onOpenRun,
   onPin,
@@ -341,7 +344,7 @@ export function Sidebar({
   const name = accountName(userEmail || (authBusy ? "…" : "Account"));
 
   return (
-    <aside className="sidebar agents-sidebar">
+    <aside className={`sidebar agents-sidebar${collapsed ? " is-collapsed" : ""}`}>
       <div className="sidebar-head">
         <button type="button" className="brand brand-home" onClick={onNewChat} aria-label="Home">
           <span className="mark">
@@ -349,8 +352,13 @@ export function Sidebar({
           </span>
         </button>
         {onCollapse ? (
-          <button className="icon-btn sidebar-collapse" type="button" aria-label="Collapse sidebar" onClick={onCollapse}>
-            <IconSidebarClose size={16} />
+          <button
+            className="icon-btn sidebar-collapse"
+            type="button"
+            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+            onClick={onCollapse}
+          >
+            {collapsed ? <IconSidebarOpen size={16} /> : <IconSidebarClose size={16} />}
           </button>
         ) : null}
         {onClose ? (
@@ -369,7 +377,7 @@ export function Sidebar({
         <span className="new-chat-plus" aria-hidden="true">
           <IconNewChat size={16} />
         </span>
-        New Chat
+        <span className="new-chat-label">New Chat</span>
       </button>
       <div className="chats-block">
         <p className="chats-heading">Chats</p>

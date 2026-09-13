@@ -1,5 +1,6 @@
 type Props = {
   open: boolean;
+  chrome?: "default" | "git";
   loading: boolean;
   error: string;
   stat: string;
@@ -9,11 +10,11 @@ type Props = {
   onCommit?: (message: string) => void;
 };
 
-export function DiffPanel({ open, loading, error, stat, patch, committing, commitError, onCommit }: Props) {
+export function DiffPanel({ open, chrome = "default", loading, error, stat, patch, committing, commitError, onCommit }: Props) {
   if (!open) return null;
   return (
-    <section className="diff-panel" id="run-diff">
-      <strong>本轮 Diff</strong>
+    <section className={`diff-panel${chrome === "git" ? " is-git" : ""}`} id="run-diff">
+      {chrome === "git" ? null : <strong>本轮 Diff</strong>}
       {onCommit ? (
         <form
           className="diff-commit"

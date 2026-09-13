@@ -59,7 +59,7 @@ type Props = {
   onSend: () => void;
   onQueue?: () => void;
   onStop?: () => void;
-  layout?: "default" | "buddy" | "home";
+  layout?: "default" | "buddy" | "home" | "followup";
   followUp?: boolean;
   onOpenPlus?: () => void;
 };
@@ -122,6 +122,8 @@ export function Composer({
   promptRef.current = prompt;
   const buddy = layout === "buddy";
   const home = layout === "home";
+  const followup = layout === "followup";
+  const compactBar = home || followup;
   useEffect(() => () => {
     void voiceRef.current?.stop();
   }, []);
@@ -158,7 +160,9 @@ export function Composer({
           ? followUp
             ? "继续说一句…"
             : "说说你要做什么"
-          : home
+          : followup
+            ? "Add a follow up"
+            : home
             ? "Ask Neo to build, fix bugs, explore"
             : isNarrowViewport()
             ? "描述任务，点发送。可粘贴图片。"
@@ -233,7 +237,7 @@ export function Composer({
   );
   return (
     <form
-      className={`${busy ? "composer is-busy" : sendLocked ? "composer is-locked" : "composer"}${buddy ? " buddy-composer" : ""}${home ? " agents-composer" : ""}`}
+      className={`${busy ? "composer is-busy" : sendLocked ? "composer is-locked" : "composer"}${buddy ? " buddy-composer" : ""}${home ? " agents-composer" : ""}${followup ? " followup-composer" : ""}`}
       id="composer"
       aria-busy={busy}
       onSubmit={(event: FormEvent) => {
@@ -270,7 +274,7 @@ export function Composer({
       <textarea
         id="prompt"
         name="prompt"
-        rows={buddy || home ? 2 : isNarrowViewport() ? 2 : 3}
+        rows={buddy || home || followup ? 2 : isNarrowViewport() ? 2 : 3}
         placeholder={placeholder}
         required={!busy && !sendLocked && images.length === 0}
         disabled={archived}
@@ -328,8 +332,8 @@ export function Composer({
           ))}
         </div>
       ) : null}
-      {home ? (
-        <div className="composer-bar agents-composer-bar">
+      {compactBar ? (
+        <div className={`composer-bar agents-composer-bar${followup ? " followup-composer-bar" : ""}`}>
           <button type="button" className="composer-plus" aria-label="Add" onClick={onOpenPlus}>
             <IconPlus size={18} />
           </button>
@@ -346,12 +350,12 @@ export function Composer({
               <button type="button" id="abort" className="stop" aria-label={stopping ? "停止中" : "停止生成"} onClick={onStop}>
                 <span className="stop-icon" aria-hidden="true" />
               </button>
-            ) : empty ? (
+            ) : empty && !followup ? (
               <button type="button" className="composer-voice" aria-label="Voice" disabled>
                 <IconMic size={16} />
               </button>
             ) : (
-              <button type="submit" id="send" className="send" disabled={sendLocked || busy} aria-label={busy ? "发送中" : "发送"}>
+              <button type="submit" id="send" className="send" disabled={sendLocked || empty || busy} aria-label={busy ? "发送中" : "发送"}>
                 <IconArrowUp size={16} />
               </button>
             )}

@@ -7,9 +7,12 @@ import { BUNDLED_RECIPES } from "@neo-bot/contracts/recipe";
 import { fileToolDiff, formatDuration, formatMessageTime, formatWhen, toolArgPreview } from "../format";
 import { IconCheck, IconError, IconSpinner, IconTool } from "../icons";
 import { MarkdownBody } from "../markdown";
+import { hasDiffStat, type DiffStat } from "../agents-home";
+import { isSameUserPrompt, type DiffFile } from "../run-chrome";
 import { shouldShowThinking } from "../turn";
 import { transcriptUserImageSrc } from "../user-image";
 import { withApiBase } from "../desk";
+import { DiffPanel } from "./DiffPanel";
 
 type Props = {
   token?: string;
@@ -21,6 +24,16 @@ type Props = {
   busy?: boolean;
   activity?: string;
   highlightId?: string | null;
+  title?: string;
+  repo?: string;
+  environment?: string | null;
+  workedFor?: string | null;
+  files?: DiffFile[];
+  diffStat?: DiffStat | null;
+  diffLoading?: boolean;
+  diffError?: string;
+  diffText?: string;
+  diffPatch?: string;
   onLoadOlder: () => void;
   onOpenDiagnostics?: () => void;
   onPickRecipe?: (recipe: Recipe) => void;
@@ -170,6 +183,16 @@ export function Transcript({
   busy = false,
   activity,
   highlightId,
+  title = "",
+  repo = "",
+  environment,
+  workedFor,
+  files = [],
+  diffStat,
+  diffLoading = false,
+  diffError = "",
+  diffText = "",
+  diffPatch = "",
   onLoadOlder,
   onOpenDiagnostics,
   onPickRecipe,
@@ -233,6 +256,14 @@ export function Transcript({
             <div className="skel skel-ai short" />
           </div>
         ) : null}
+        {title ? (
+          <header className="run-head">
+            <h1 id="run-conversation-title">{title}</h1>
+            {repo ? <p className="run-head-repo">{repo}</p> : null}
+            {environment ? <p className="run-env">{environment}</p> : null}
+            {workedFor ? <p className="run-worked">{workedFor}</p> : null}
+          </header>
+        ) : null}
         {empty ? (
           <div className="empty">
             <h2>有什么可以帮你的？</h2>
@@ -251,7 +282,7 @@ export function Transcript({
             ) : null}
           </div>
         ) : (
-          messages.map((message) => {
+          messages.map((message, messageIndex) => {
             if (message.kind === "artifact.uploaded") {
               return <ArtifactCard key={message.id} message={message} />;
             }
@@ -277,6 +308,10 @@ export function Transcript({
               );
             }
             if (message.role === "user") {
+              const firstUser = !messages.slice(0, messageIndex).some((item) => item.role === "user");
+              if (title && firstUser && isSameUserPrompt(message.text ?? "", title)) {
+                return null;
+              }
               return (
                 <article
                   key={message.id}
@@ -346,6 +381,41 @@ export function Transcript({
             );
           })
         )}
+        {!empty && !loading && (files.length > 0 || hasDiffStat(diffStat) || Boolean(diffPatch.trim())) ? (
+          <details className="files-changed" open>
+            <summary>
+              <span>{files.length || diffStat?.files || 1} Files Changed</span>
+              {hasDiffStat(diffStat) && diffStat ? (
+                <span className="change-counts">
+                  {diffStat.added > 0 ? <span className="change-add">+{diffStat.added}</span> : null}
+                  {diffStat.deleted > 0 ? <span className="change-del">−{diffStat.deleted}</span> : null}
+                </span>
+              ) : null}
+            </summary>
+            {files.length > 0 ? (
+              <ul className="files-changed-list">
+                {files.map((file) => (
+                  <li key={file.path}>
+                    <span className="files-changed-path">{file.path}</span>
+                    <span className="change-counts">
+                      {file.added > 0 ? <span className="change-add">+{file.added}</span> : null}
+                      {file.deleted > 0 ? <span className="change-del">−{file.deleted}</span> : null}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <DiffPanel
+                open
+                chrome="git"
+                loading={diffLoading}
+                error={diffError}
+                stat={diffText}
+                patch={diffPatch}
+              />
+            )}
+          </details>
+        ) : null}
         {shouldShowThinking(busy, messages) && !empty && !loading ? (
           <div className="turn-progress" id="turn-progress">
             <div className="think-line">
