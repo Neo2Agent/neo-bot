@@ -4,7 +4,15 @@ import { transcriptGroups } from "@neo-bot/contracts/transcript";
 import type { TranscriptMessage, TranscriptTool } from "@neo-bot/contracts/events";
 import type { Recipe } from "@neo-bot/contracts/recipe";
 import { BUNDLED_RECIPES } from "@neo-bot/contracts/recipe";
-import { fileToolDiff, formatDuration, formatMessageTime, formatWhen, toolArgPreview } from "../format";
+import {
+  fileToolDiff,
+  formatDuration,
+  formatMessageTime,
+  formatWhen,
+  toolActivityKind,
+  toolActivityLabel,
+  toolArgPreview,
+} from "../format";
 import { fileBaseName, IconCheck, IconChevronDown, IconError, IconPath, IconSpinner, IconTool } from "../icons";
 import { MarkdownBody } from "../markdown";
 import { hasDiffStat, type DiffStat } from "../agents-home";
@@ -71,6 +79,10 @@ function ToolCard({ tool, compact = false }: { tool: TranscriptTool; compact?: b
   const running = tool.status === "running" && !tool.output;
   const preview = toolArgPreview(tool.args);
   const diff = fileToolDiff(tool);
+  const kind = toolActivityKind(tool.name);
+  const name = toolDisplayName(tool);
+  const label = compact ? toolActivityLabel(tool, name) : name;
+  const inline = compact && (kind === "explore" || kind === "default");
   const preRef = useRef<HTMLPreElement>(null);
   const parentSubagent = tool.name === "neo_subagent";
   const subagent = parentSubagent || Boolean(tool.details?.subagent);
@@ -85,18 +97,25 @@ function ToolCard({ tool, compact = false }: { tool: TranscriptTool; compact?: b
 
   return (
     <details
-      className={`${tool.isError ? "tool err" : running ? "tool run" : "tool"}${subagent ? " subagent" : ""}`}
+      className={[
+        "tool",
+        tool.isError ? "err" : running ? "run" : "",
+        subagent ? "subagent" : "",
+        compact ? `is-compact is-${kind}` : "",
+      ]
+        .filter(Boolean)
+        .join(" ")}
       data-tool={tool.name}
       {...(running ? { open: true } : {})}
     >
       <summary>
-        <span className="tool-chevron" aria-hidden="true" />
+        {inline ? null : <span className="tool-chevron" aria-hidden="true" />}
         <span className="tool-name">
           {running ? <IconSpinner size={12} /> : tool.isError ? <IconError size={12} /> : compact ? null : <ToolStatus tool={tool} />}
-          <IconTool name={tool.name} size={14} />
-          {toolDisplayName(tool)}
+          {compact && kind !== "file" ? null : <IconTool name={tool.name} size={14} />}
+          {label}
         </span>
-        {preview ? <span className="cmd">{preview}</span> : null}
+        {!compact && preview ? <span className="cmd">{preview}</span> : null}
       </summary>
       {tasks.length > 0 ? (
         <ul className="subagent-tasks">
@@ -292,15 +311,19 @@ export function Transcript({
         <header className="run-head">
           <h1 id="run-conversation-title">{title}</h1>
           {repo ? <p className="run-head-repo">{repo}</p> : null}
-          {environment || workedFor ? (
+          {environment === "Environment ready" || workedFor ? (
             <div className="run-meta">
-              {environment ? (
-                <p className={`run-env${environment.endsWith("failed") ? " is-fail" : " is-ready"}`}>
-                  {environment.endsWith("failed") ? <IconError size={12} /> : <IconCheck size={12} />}
-                  {environment}
+              {environment === "Environment ready" ? (
+                <p className="run-env is-ready">
+                  <IconCheck size={12} />
+                  Environment ready
                 </p>
               ) : null}
-              {workedFor ? <p className="run-worked">{workedFor}</p> : null}
+              {workedFor ? (
+                <details className="run-worked">
+                  <summary>{workedFor}</summary>
+                </details>
+              ) : null}
             </div>
           ) : null}
         </header>

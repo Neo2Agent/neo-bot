@@ -865,6 +865,42 @@ h1 {
   padding-left: 1.2em;
 }
 
+.md-table-fold {
+  margin: 0 0 8px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.25;
+}
+
+.md-table-fold > summary {
+  cursor: pointer;
+  list-style: none;
+}
+
+.md-table-fold > summary::-webkit-details-marker {
+  display: none;
+}
+
+.md-table-wrap {
+  margin-top: 6px;
+  overflow: auto;
+  max-height: 200px;
+}
+
+.md-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.md-table th,
+.md-table td {
+  padding: 3px 6px;
+  border: 1px solid var(--line);
+  text-align: left;
+}
+
 .md-pre,
 .tool-diff {
   margin: 8px 0 0;
@@ -5734,7 +5770,7 @@ html.is-narrow,
 
 .app.is-run-detail .transcript-shell .run-head {
   flex: 0 0 auto;
-  padding: 12px 28px 2px;
+  padding: 12px 28px 0;
   background: var(--stage);
 }
 
@@ -5796,8 +5832,8 @@ html.is-narrow,
 .run-head {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  padding: 4px 0 6px;
+  gap: 1px;
+  padding: 4px 0 4px;
 }
 
 .run-head h1,
@@ -5821,31 +5857,36 @@ html.is-narrow,
 
 .run-meta {
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 2px;
-  margin: 2px 0 0;
-  color: var(--muted);
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0 10px;
+  margin: 0;
+  padding: 0;
+  color: #737373;
   font-size: 12px;
+  font-weight: 400;
   line-height: 1.2;
 }
 
 .run-env,
 .run-worked {
   margin: 0;
-  color: var(--muted);
+  color: #737373;
   font-size: 12px;
+  font-weight: 400;
   line-height: 1.2;
 }
 
 .run-env {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: 4px;
 }
 
 .run-env.is-ready {
-  color: var(--text);
+  color: #737373;
+  font-weight: 400;
 }
 
 .run-env.is-ready svg {
@@ -5854,6 +5895,18 @@ html.is-narrow,
 
 .run-env.is-fail {
   color: var(--err);
+}
+
+.run-worked > summary {
+  cursor: pointer;
+  list-style: none;
+  color: #737373;
+  font-size: 12px;
+  font-weight: 400;
+}
+
+.run-worked > summary::-webkit-details-marker {
+  display: none;
 }
 
 .run-meta-sep {
@@ -5888,20 +5941,51 @@ html.is-narrow,
   border: 0;
   border-radius: 8px;
   background: transparent;
-  color: var(--text);
+  color: #737373;
   font-family: inherit;
-  font-size: 13px;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.25;
 }
 
 .app.is-run-detail .tool:hover {
-  background: #ececec;
+  background: transparent;
 }
 
 .app.is-run-detail .tool summary {
   flex-wrap: nowrap;
   align-items: center;
-  gap: 8px;
-  min-height: 26px;
+  gap: 6px;
+  min-height: 0;
+}
+
+.app.is-run-detail .tool.is-explore,
+.app.is-run-detail .tool.is-default {
+  padding: 0 2px;
+  background: transparent;
+}
+
+.app.is-run-detail .tool.is-shell {
+  margin: 2px 0;
+  padding: 4px 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #ffffff;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+.app.is-run-detail .tool.is-file {
+  margin: 2px 0;
+  padding: 4px 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.app.is-run-detail .tool.is-compact .tool-name {
+  color: #737373;
+  font-size: 12px;
+  font-weight: 400;
 }
 
 .tool-chevron {
@@ -6200,37 +6284,42 @@ html.is-narrow,
 }
 
 .git-pane .artifact-list {
-  flex: 0 0 42%;
-  max-width: 240px;
+  flex: 0 0 38%;
+  max-width: 220px;
   margin: 0;
-  padding: 8px;
-  gap: 1px;
+  padding: 6px;
+  gap: 0;
   border-right: 1px solid var(--line);
 }
 
 .git-pane .artifact-row {
-  min-height: 30px;
-  padding: 4px 8px;
-  border-radius: 8px;
+  min-height: 24px;
+  padding: 2px 6px;
+  border-radius: 6px;
+  gap: 6px;
 }
 
 .git-pane .artifact-copy {
   flex-direction: row;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
 }
 
 .git-pane .artifact-name {
-  font-size: 13px;
-  font-weight: 500;
+  font-size: 12px;
+  font-weight: 400;
 }
 
 .git-pane .artifact-glyph {
-  width: 22px;
-  height: 22px;
-  flex-basis: 22px;
-  border-radius: 6px;
-  background: #f7f7f7;
+  width: 16px;
+  height: 16px;
+  flex-basis: 16px;
+  border-radius: 0;
+  background: transparent;
+}
+
+.git-pane .artifact-glyph img {
+  display: none;
 }
 
 .git-pane .artifact-row:hover,
@@ -6248,6 +6337,8 @@ html.is-narrow,
 
 .git-pane .artifact-preview-empty {
   min-height: 0;
+  padding: 12px;
+  gap: 0;
   color: var(--muted);
   font-size: 13px;
 }

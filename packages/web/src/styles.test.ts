@@ -61,6 +61,10 @@ test("run conversation uses a three-column Cursor-like chrome", () => {
   assert.match(css, /\.files-changed-file/);
   assert.match(css, /\.git-pane \.artifact-stage/);
   assert.match(css, /\.git-pane \.artifact-stage\s*\{[^}]*flex-direction:\s*row/);
+  assert.match(css, /\.run-env\.is-ready\s*\{[^}]*#737373/);
+  assert.match(css, /\.app\.is-run-detail \.tool\.is-shell/);
+  assert.match(css, /\.md-table-fold/);
+  assert.match(css, /\.git-pane \.artifact-glyph img\s*\{[^}]*display:\s*none/);
   assert.match(css, /\.files-changed/);
   assert.match(css, /\.composer\.followup-composer/);
   assert.match(css, /\.agents-sidebar\.is-collapsed/);

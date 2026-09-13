@@ -1,6 +1,6 @@
 import { runDisplayTitle, type Run } from "@neo-bot/contracts/run";
-import { isWorkspaceReady } from "./run-diff-stats";
 import { formatDuration } from "./format";
+import { isRunSettled } from "./run-diff-stats";
 import { isActiveRunStatus } from "./turn";
 
 export type DiffFile = {
@@ -58,11 +58,19 @@ function parseStatFiles(stat: string): DiffFile[] {
   return files;
 }
 
+/** Green-check chrome only. Failures and in-progress setup stay hidden. */
 export function environmentLine(run: Pick<Run, "status" | "setupStatus">): string | null {
   const setup = run.setupStatus;
-  if (setup === "INSTALL_FAILED" || setup === "START_FAILED") return "Environment failed";
-  if (isWorkspaceReady(run)) return "Environment ready";
+  if (setup === "START_SUCCEEDED") return "Environment ready";
+  if (setup === "INSTALL_SUCCEEDED" && isRunSettled(run)) return "Environment ready";
   return null;
+}
+
+/** `5m 58s` for the title row; leave shared `formatDuration` (`5m58s`) alone. */
+function formatWorkedFor(start: string, end: string, now: Date): string {
+  const compact = formatDuration(start, end, now);
+  if (!compact) return "";
+  return compact.replace(/(\d+m)(\d+s)/, "$1 $2");
 }
 
 export function workedForLine(
@@ -71,7 +79,7 @@ export function workedForLine(
 ): string | null {
   const end = run.idleAt || (isActiveRunStatus(run.status) ? now.toISOString() : null);
   if (!end) return null;
-  const duration = formatDuration(run.createdAt, end, now);
+  const duration = formatWorkedFor(run.createdAt, end, now);
   return duration ? `Worked for ${duration}` : null;
 }
 

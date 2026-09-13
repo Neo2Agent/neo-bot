@@ -77,9 +77,7 @@ export function ArtifactsPanel({
     <section className={`artifacts-panel${preview ? " is-previewing" : ""}${git ? " is-git" : ""}`} id="run-artifacts">
       <div className="artifact-head">
         <strong>{git ? "Artifacts" : "产物"}</strong>
-        {!canSave && !preview ? (
-          <p className="hint">{git ? "Save to a project from a project chat." : "只有项目对话才能保存到项目。"}</p>
-        ) : null}
+        {!git && !canSave && !preview ? <p className="hint">只有项目对话才能保存到项目。</p> : null}
       </div>
       {loading ? <p className="hint">{git ? "Loading…" : "正在读取…"}</p> : null}
       {error ? <p className="setup err">{error}</p> : null}
@@ -91,7 +89,6 @@ export function ArtifactsPanel({
         {artifacts.map((item) => {
           const selected = preview?.name === item.name;
           const previewable = previewKind(item);
-          const thumb = previewable === "image" && item.url;
           return (
             <li key={item.name} className={selected ? "is-on" : undefined}>
               <button
@@ -99,11 +96,12 @@ export function ArtifactsPanel({
                 className="artifact-row"
                 aria-pressed={selected}
                 data-preview-kind={previewable ?? undefined}
+                data-content-type={item.contentType}
                 title={artifactMeta(item, git)}
                 onClick={() => setPreview(selected ? null : item)}
               >
                 <span className="artifact-glyph">
-                  {thumb ? <img src={item.url} alt="" /> : <IconFileKind kind={artifactKind(item)} size={16} />}
+                  <IconFileKind kind={artifactKind(item)} size={git ? 14 : 16} />
                 </span>
                 <span className="artifact-copy">
                   <span className="artifact-name">{item.name}</span>
@@ -141,14 +139,12 @@ export function ArtifactsPanel({
             </div>
           ) : kind === "html" && preview.url ? (
             <iframe className="artifact-preview-frame" title={preview.name} src={preview.url} sandbox="allow-scripts" />
+          ) : git ? (
+            <div className="artifact-preview-empty" />
           ) : (
             <div className="artifact-preview-empty">
               <IconFileKind kind={artifactKind(preview)} size={28} />
-              <p>
-                {git
-                  ? `${artifactMeta(preview, true)} — no inline preview`
-                  : `${artifactKindLabel(preview)} 文件，无法预览`}
-              </p>
+              <p>{`${artifactKindLabel(preview)} 文件，无法预览`}</p>
               {preview.url || onOpen ? (
                 <button
                   type="button"
@@ -161,7 +157,7 @@ export function ArtifactsPanel({
                     if (preview.url) window.open(preview.url, "_blank", "noopener,noreferrer");
                   }}
                 >
-                  {git ? "Open" : "打开"}
+                  打开
                 </button>
               ) : null}
             </div>

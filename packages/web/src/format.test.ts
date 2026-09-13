@@ -11,6 +11,8 @@ import {
   parseUnifiedDiff,
   resolveChatModel,
   runListPlaceSuffix,
+  toolActivityKind,
+  toolActivityLabel,
   toolArgPreview,
 } from "./format.js";
 
@@ -71,6 +73,18 @@ test("formatDuration prints seconds then minutes", () => {
 test("toolArgPreview prefers command and path", () => {
   assert.equal(toolArgPreview({ command: "ls -la" }), "ls -la");
   assert.equal(toolArgPreview({ path: "src/app.ts" }), "src/app.ts");
+});
+
+test("toolActivityLabel is a gray explore / shell / name row", () => {
+  assert.equal(toolActivityKind("read"), "explore");
+  assert.equal(toolActivityKind("bash"), "shell");
+  assert.equal(toolActivityKind("edit"), "file");
+  assert.equal(toolActivityKind("neo_pr_create"), "default");
+  assert.equal(toolActivityLabel({ name: "read", args: { path: "src/app.ts" } }, "read"), "explored src/app.ts");
+  assert.equal(toolActivityLabel({ name: "grep" }, "grep"), "explored");
+  assert.equal(toolActivityLabel({ name: "bash", args: { command: "ls -la" } }, "bash"), "$ ls -la");
+  assert.equal(toolActivityLabel({ name: "edit", args: { path: "hello.txt" } }, "edit"), "hello.txt");
+  assert.equal(toolActivityLabel({ name: "neo_pr_create", args: { title: "Open" } }, "neo_pr_create"), "neo_pr_create");
 });
 
 test("fileToolDiff renders edit old/new text", () => {
