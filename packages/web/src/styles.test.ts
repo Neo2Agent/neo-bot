@@ -4,7 +4,9 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
 
-const css = readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), "styles.css"), "utf8");
+const here = path.dirname(fileURLToPath(import.meta.url));
+const css = readFileSync(path.join(here, "styles.css"), "utf8");
+const authGate = readFileSync(path.join(here, "components/AuthGate.tsx"), "utf8");
 
 test("web shell keeps the original cool-gray chrome", () => {
   assert.match(css, /--bg:\s*#ffffff/);
@@ -85,4 +87,30 @@ test("welcome cluster fits a 14-inch laptop viewport without a page scroll", () 
   assert.match(css, /@media \(min-width: 1400px\)/);
   assert.match(css, /@container transcript \(max-height: 560px\)/);
   assert.match(css, /@container transcript \(max-height: 420px\)/);
+});
+
+test("login wall is a sparse light authenticator column", () => {
+  assert.match(css, /\.auth-gate\s*\{[^}]*background:\s*var\(--stage\)/);
+  assert.match(css, /\.auth-gate:not\(\[hidden\]\)/);
+  assert.match(css, /\.auth-card\s*\{[^}]*width:\s*min\(360px/);
+  assert.match(css, /\.auth-brand\s*\{[^}]*position:\s*absolute/);
+  assert.match(css, /\.auth-card input:focus\s*\{[^}]*border-color:\s*var\(--accent\)/);
+  assert.match(css, /\.auth-card input:focus\s*\{[^}]*box-shadow:\s*0 0 0 1px var\(--accent\)/);
+  assert.match(css, /\.auth-card button\.auth-submit[\s\S]*?background:\s*var\(--btn-primary\)/);
+  assert.match(css, /--stage:\s*#f7f7f7/);
+  assert.match(css, /--line:\s*#e5e5e5/);
+  assert.match(css, /--text:\s*#2b2b2b/);
+  assert.match(css, /--muted:\s*#737373/);
+  assert.match(css, /--btn-primary:\s*#111111/);
+  assert.match(css, /--accent:\s*#4d6bfe/);
+  assert.doesNotMatch(css, /0 10px 32px rgba\(17, 17, 16/);
+  assert.doesNotMatch(authGate, /Google|GitHub|Apple|SSO|Continue with/);
+  assert.doesNotMatch(authGate, /Terms|Privacy|服务条款|隐私/);
+  assert.match(authGate, /欢迎使用 Neo/);
+  assert.match(authGate, /登录继续云端 Agent/);
+  assert.match(authGate, /auth-wordmark/);
+  assert.match(authGate, /type="password"/);
+  assert.match(authGate, /name="account"/);
+  assert.match(authGate, /onMode\("register"\)/);
+  assert.doesNotMatch(authGate, /value="123456"/);
 });

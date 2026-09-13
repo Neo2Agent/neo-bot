@@ -45,7 +45,7 @@ export function AuthGate({
   const effectiveMode = narrow && mode === "token" ? "login" : mode;
   const registering = effectiveMode === "register";
   const title =
-    effectiveMode === "token" ? "服务令牌" : registering ? "注册 Neo" : isDeskApp() ? "登录 Desk" : "登录 Neo";
+    effectiveMode === "token" ? "服务令牌" : registering ? "注册 Neo" : "欢迎使用 Neo";
   const copy =
     effectiveMode === "token"
       ? "控制面开启了服务令牌。多个设备用同一条 CONTROL_PLANE_TOKEN 即可订阅流。"
@@ -53,7 +53,7 @@ export function AuthGate({
         ? "用手机号注册，无需验证码。提交后等管理员审核，通过后才能登录；起步额度 ¥5。"
         : isDeskApp()
           ? "Desk 与 Web 共用账号。登录后可以选本机执行。"
-          : "用户名或手机号加密码，进入云端 Agent。";
+          : "登录继续云端 Agent";
   const canSubmit =
     effectiveMode === "token"
       ? Boolean(token.trim())
@@ -71,7 +71,13 @@ export function AuthGate({
         : "登录";
 
   return (
-    <div className={narrow ? "auth-gate is-buddy" : "auth-gate"} id="auth-gate" hidden={!open}>
+    <div className="auth-gate" id="auth-gate" hidden={!open}>
+      <div className="auth-brand">
+        <span className="mark">
+          <BuddyMascot size={22} compact />
+        </span>
+        <span className="auth-wordmark">Neo</span>
+      </div>
       <form
         className="auth-card"
         id="auth-form"
@@ -83,50 +89,8 @@ export function AuthGate({
           onSubmit();
         }}
       >
-        <div className={narrow ? "auth-brand buddy-login" : "auth-brand"}>
-          {narrow ? (
-            <BuddyMascot size={108} face />
-          ) : (
-            <span className="mark">
-              <BuddyMascot size={30} compact />
-            </span>
-          )}
-          {narrow ? (
-            <>
-              <h2 id="auth-title" className="buddy-hello">
-                Neo
-              </h2>
-              <p className="buddy-login-kicker">Cloud Agent</p>
-            </>
-          ) : (
-            <p className="login-kicker">Neo Cloud Agent</p>
-          )}
-        </div>
-        {narrow ? null : <h2 id="auth-title">{title}</h2>}
-        <p id="auth-copy">{narrow ? (registering ? "手机号注册，审核通过后可用" : "先登录，再下任务") : copy}</p>
-        {narrow ? (
-          <div className="auth-tabs" id="auth-tabs">
-            {(["login", "register"] as const).map((item) => (
-              <button
-                key={item}
-                type="button"
-                data-mode={item}
-                className={effectiveMode === item ? "active" : ""}
-                onClick={() => onMode(item)}
-              >
-                {item === "login" ? "登录" : "注册"}
-              </button>
-            ))}
-          </div>
-        ) : (
-          <div className="auth-tabs" id="auth-tabs">
-            {(["login", "register", "token"] as const).map((item) => (
-              <button key={item} type="button" data-mode={item} className={mode === item ? "active" : ""} onClick={() => onMode(item)}>
-                {item === "login" ? "登录" : item === "register" ? "注册" : "服务令牌"}
-              </button>
-            ))}
-          </div>
-        )}
+        <h2 id="auth-title">{title}</h2>
+        <p id="auth-copy">{copy}</p>
         <div id="auth-user-fields" hidden={effectiveMode === "token"}>
           {registering ? (
             <>
@@ -233,9 +197,22 @@ export function AuthGate({
                 手机号注册
               </button>
             </>
-          ) : null}
+          ) : (
+            <>
+              使用账号密码？
+              <button type="button" onClick={() => onMode("login")}>
+                返回登录
+              </button>
+            </>
+          )}
         </p>
-        {narrow ? <p className="buddy-login-hint">手机只打云端 /v1，不在本机跑 Agent。</p> : null}
+        {!narrow && effectiveMode === "login" ? (
+          <p className="auth-token-switch">
+            <button type="button" onClick={() => onMode("token")}>
+              使用服务令牌
+            </button>
+          </p>
+        ) : null}
       </form>
     </div>
   );
