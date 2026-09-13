@@ -5,7 +5,7 @@ import type { TranscriptMessage, TranscriptTool } from "@neo-bot/contracts/event
 import type { Recipe } from "@neo-bot/contracts/recipe";
 import { BUNDLED_RECIPES } from "@neo-bot/contracts/recipe";
 import { fileToolDiff, formatDuration, formatMessageTime, formatWhen, toolArgPreview } from "../format";
-import { IconCheck, IconError, IconSpinner, IconTool } from "../icons";
+import { fileBaseName, IconCheck, IconChevronDown, IconError, IconPath, IconSpinner, IconTool } from "../icons";
 import { MarkdownBody } from "../markdown";
 import { hasDiffStat, type DiffStat } from "../agents-home";
 import { isSameUserPrompt, type DiffFile } from "../run-chrome";
@@ -67,7 +67,7 @@ function readSubagentTasks(details?: Record<string, unknown>): SubagentTask[] {
   });
 }
 
-function ToolCard({ tool }: { tool: TranscriptTool }) {
+function ToolCard({ tool, compact = false }: { tool: TranscriptTool; compact?: boolean }) {
   const running = tool.status === "running" && !tool.output;
   const preview = toolArgPreview(tool.args);
   const diff = fileToolDiff(tool);
@@ -92,7 +92,7 @@ function ToolCard({ tool }: { tool: TranscriptTool }) {
       <summary>
         <span className="tool-chevron" aria-hidden="true" />
         <span className="tool-name">
-          <ToolStatus tool={tool} />
+          {running ? <IconSpinner size={12} /> : tool.isError ? <IconError size={12} /> : compact ? null : <ToolStatus tool={tool} />}
           <IconTool name={tool.name} size={14} />
           {toolDisplayName(tool)}
         </span>
@@ -293,16 +293,15 @@ export function Transcript({
           <h1 id="run-conversation-title">{title}</h1>
           {repo ? <p className="run-head-repo">{repo}</p> : null}
           {environment || workedFor ? (
-            <p className="run-meta">
+            <div className="run-meta">
               {environment ? (
-                <span className={`run-env${environment.endsWith("failed") ? " is-fail" : " is-ready"}`}>
+                <p className={`run-env${environment.endsWith("failed") ? " is-fail" : " is-ready"}`}>
                   {environment.endsWith("failed") ? <IconError size={12} /> : <IconCheck size={12} />}
                   {environment}
-                </span>
+                </p>
               ) : null}
-              {environment && workedFor ? <span className="run-meta-sep" aria-hidden="true">·</span> : null}
-              {workedFor ? <span className="run-worked">{workedFor}</span> : null}
-            </p>
+              {workedFor ? <p className="run-worked">{workedFor}</p> : null}
+            </div>
           ) : null}
         </header>
       ) : null}
@@ -368,6 +367,9 @@ export function Transcript({
                   if (next.role !== "setup" || next.kind === "artifact.uploaded") break;
                   group.push(next);
                 }
+                if (!group.some(setupFailed)) {
+                  return null;
+                }
                 return (
                   <SetupFold
                     key={group[0]?.id}
@@ -432,7 +434,11 @@ export function Transcript({
                       <Fragment key={`${message.id}-tools-${index}`}>
                         <div className="tool-stack">
                           {group.tools.map((tool, toolIndex) => (
-                            <ToolCard key={tool.id ?? `${tool.name}-${toolIndex}`} tool={tool} />
+                            <ToolCard
+                              key={tool.id ?? `${tool.name}-${toolIndex}`}
+                              tool={tool}
+                              compact={Boolean(title)}
+                            />
                           ))}
                         </div>
                         {last ? <MessageTime message={message} className="assistant-time" /> : null}
@@ -463,8 +469,11 @@ export function Transcript({
         {!empty && !loading && (files.length > 0 || hasDiffStat(diffStat) || Boolean(diffPatch.trim())) ? (
           <details className="files-changed" open>
             <summary>
-              <span>
-                {fileCount} {fileCount === 1 ? "File" : "Files"} Changed
+              <span className="files-changed-label">
+                <IconChevronDown size={14} />
+                <span>
+                  {fileCount} {fileCount === 1 ? "File" : "Files"} Changed
+                </span>
               </span>
               {hasDiffStat(diffStat) && diffStat ? (
                 <span className="change-counts">
@@ -476,8 +485,11 @@ export function Transcript({
             {files.length > 0 ? (
               <ul className="files-changed-list">
                 {files.map((file) => (
-                  <li key={file.path}>
-                    <span className="files-changed-path">{file.path}</span>
+                  <li key={file.path} title={file.path}>
+                    <span className="files-changed-file">
+                      <IconPath path={file.path} size={14} />
+                      <span className="files-changed-path">{fileBaseName(file.path)}</span>
+                    </span>
                     <span className="change-counts">
                       {file.added > 0 ? <span className="change-add">+{file.added}</span> : null}
                       {file.deleted > 0 ? <span className="change-del">−{file.deleted}</span> : null}

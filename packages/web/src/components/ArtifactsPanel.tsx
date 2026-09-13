@@ -84,7 +84,9 @@ export function ArtifactsPanel({
       {loading ? <p className="hint">{git ? "Loading…" : "正在读取…"}</p> : null}
       {error ? <p className="setup err">{error}</p> : null}
       {saveError ? <p className="setup err">{saveError}</p> : null}
-      {!loading && !error && artifacts.length === 0 ? <p className="hint">{git ? "No artifacts yet." : "还没有产物。"}</p> : null}
+      {!loading && !error && artifacts.length === 0 && !git ? <p className="hint">还没有产物。</p> : null}
+      {artifacts.length > 0 || git ? (
+      <div className="artifact-stage">
       <ul className="artifact-list">
         {artifacts.map((item) => {
           const selected = preview?.name === item.name;
@@ -97,6 +99,7 @@ export function ArtifactsPanel({
                 className="artifact-row"
                 aria-pressed={selected}
                 data-preview-kind={previewable ?? undefined}
+                title={artifactMeta(item, git)}
                 onClick={() => setPreview(selected ? null : item)}
               >
                 <span className="artifact-glyph">
@@ -104,15 +107,16 @@ export function ArtifactsPanel({
                 </span>
                 <span className="artifact-copy">
                   <span className="artifact-name">{item.name}</span>
-                  <small>{artifactMeta(item, git)}</small>
+                  {git ? null : <small>{artifactMeta(item, git)}</small>}
                 </span>
               </button>
             </li>
           );
         })}
       </ul>
-      {preview ? (
         <div className="artifact-preview" data-preview-kind={kind ?? "none"}>
+          {preview ? (
+            <>
           <div className="artifact-preview-bar">
             <strong>{preview.name}</strong>
             <span className="artifact-preview-actions">
@@ -162,7 +166,14 @@ export function ArtifactsPanel({
               ) : null}
             </div>
           )}
+            </>
+          ) : (
+            <div className="artifact-preview-empty">
+              <p>{git ? (artifacts.length ? "Select a file" : "No artifacts yet.") : "选择一个文件"}</p>
+            </div>
+          )}
         </div>
+      </div>
       ) : null}
     </section>
   );
