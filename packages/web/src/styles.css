@@ -104,7 +104,7 @@ summary:focus-visible,
 
 .app {
   display: grid;
-  grid-template-columns: 236px minmax(0, 1fr);
+  grid-template-columns: 220px minmax(0, 1fr);
   height: 100%;
   height: 100vh;
   height: 100dvh;
@@ -5065,12 +5065,28 @@ html.is-narrow,
   background: var(--stage);
 }
 
+.agents-sidebar {
+  padding: 10px 8px 10px;
+  gap: 4px;
+}
+
+.agents-sidebar,
+.agents-sidebar .run-item {
+  font-family: inherit;
+}
+
 .agents-sidebar .sidebar-head {
   flex-direction: row;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
   padding: 2px 2px 6px;
+}
+
+.agents-sidebar .sidebar-collapse {
+  min-width: 28px;
+  min-height: 28px;
+  color: var(--muted);
 }
 
 .brand-home {
@@ -5108,8 +5124,8 @@ html.is-narrow,
 .agents-sidebar .new-chat:hover {
   justify-content: flex-start;
   gap: 10px;
-  min-height: 34px;
-  padding: 6px 10px;
+  min-height: 32px;
+  padding: 6px 8px;
   border: 0;
   border-radius: 8px;
   background: transparent;
@@ -5118,8 +5134,9 @@ html.is-narrow,
   box-shadow: none;
 }
 
-.agents-sidebar .new-chat.is-current {
-  background: #e8e8e8;
+.agents-sidebar .new-chat.is-current,
+.agents-sidebar .new-chat.is-current:hover {
+  background: #e7e7e7;
 }
 
 .agents-sidebar .new-chat:hover {
@@ -5167,11 +5184,11 @@ html.is-narrow,
 
 .agents-sidebar .run-item.chat-row {
   display: grid;
-  grid-template-columns: 10px minmax(0, 1fr) auto;
+  grid-template-columns: 8px minmax(0, 1fr) auto;
   align-items: center;
   gap: 8px;
-  min-height: 30px;
-  padding: 5px 8px;
+  min-height: 28px;
+  padding: 4px 8px;
   border: 0;
   border-radius: 8px;
   background: transparent;
@@ -5384,26 +5401,51 @@ html.is-narrow,
 }
 
 .agents-stack {
-  width: min(510px, calc(100% - 48px));
+  width: min(600px, calc(100% - 64px));
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  gap: 14px;
+  gap: 18px;
   padding: 8px 0 48px;
 }
 
+.agents-landing.is-empty .agents-stack {
+  width: min(510px, calc(100% - 48px));
+}
+
+.agents-hero {
+  width: 100%;
+  max-width: 510px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  align-self: center;
+}
+
 .agents-context {
-  margin: 0 0 2px 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 2px 2px;
   color: var(--muted);
   font-size: 13px;
   text-align: left;
+}
+
+.agents-context-chevron {
+  width: 0;
+  height: 0;
+  border-left: 3.5px solid transparent;
+  border-right: 3.5px solid transparent;
+  border-top: 4px solid var(--muted);
 }
 
 .composer.agents-composer {
   width: 100%;
   max-width: 510px;
   margin: 0;
-  padding: 12px 14px 10px;
+  padding: 16px 16px 12px;
   border: 1px solid var(--line);
   border-radius: 12px;
   background: var(--panel);
@@ -5412,9 +5454,9 @@ html.is-narrow,
 }
 
 .composer.agents-composer textarea {
-  min-height: 72px;
+  min-height: 84px;
   max-height: 160px;
-  padding: 6px 4px 12px;
+  padding: 4px 2px 16px;
   color: var(--text);
 }
 
@@ -5435,10 +5477,10 @@ html.is-narrow,
   width: 28px;
   height: 28px;
   padding: 0;
-  border: 0;
+  border: 1px solid var(--line);
   border-radius: 999px;
-  background: transparent;
-  color: var(--muted);
+  background: #fff;
+  color: var(--text);
   cursor: pointer;
 }
 
@@ -5454,34 +5496,45 @@ html.is-narrow,
   box-shadow: none;
 }
 
+.composer.agents-composer .neo-select-trigger:hover:not(:disabled) {
+  border-color: transparent;
+}
+
 .composer.agents-composer button.send,
 .composer.agents-composer button.send:disabled,
-.composer.agents-composer button.send:hover:not(:disabled) {
+.composer.agents-composer button.send:hover:not(:disabled),
+.composer.agents-composer button.composer-voice {
   width: 32px;
   height: 32px;
   min-height: 32px;
   padding: 0;
+  border: 0;
   border-radius: 999px;
   background: var(--btn-primary);
   color: #fff;
   opacity: 1;
 }
 
+.composer.agents-composer button.composer-voice:disabled {
+  cursor: default;
+}
+
 .agent-cards {
   list-style: none;
-  margin: 18px 0 0;
+  margin: 22px 0 0;
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
 }
 
 .agent-card {
   display: grid;
-  grid-template-columns: 120px minmax(0, 1fr);
-  gap: 18px;
+  grid-template-columns: 108px minmax(0, 1fr);
+  align-items: start;
+  gap: 20px;
   width: 100%;
-  min-height: 88px;
+  min-height: 104px;
   padding: 18px 20px;
   border: 1px solid var(--line);
   border-radius: 12px;
@@ -5501,7 +5554,9 @@ html.is-narrow,
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 6px;
+  justify-content: center;
+  min-height: 68px;
+  gap: 8px;
 }
 
 .agent-card-files {
@@ -5533,14 +5588,17 @@ html.is-narrow,
 .agent-card-body {
   min-width: 0;
   display: grid;
+  align-content: center;
   gap: 8px;
+  min-height: 68px;
 }
 
 .agent-card-title {
   overflow: hidden;
+  color: var(--text);
   font-size: 14px;
   font-weight: 600;
-  line-height: 1.35;
+  line-height: 1.4;
   white-space: nowrap;
   text-overflow: ellipsis;
 }

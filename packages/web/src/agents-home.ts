@@ -74,10 +74,13 @@ export function groupRunsByTime<T extends { createdAt: string; updatedAt?: strin
   ].filter((group) => group.runs.length > 0);
 }
 
+export function runHasPullRequest(run: Pick<Run, "pullRequests">): boolean {
+  return (run.pullRequests ?? []).some((item) => Boolean(item.url));
+}
+
 export function runPrBadge(run: Pick<Run, "status" | "pullRequests">): "Open" | "Merged" | null {
-  const hasPr = (run.pullRequests ?? []).some((item) => Boolean(item.url));
   if (run.status === "ARCHIVED" || run.status === "EXPIRED") {
-    return hasPr ? "Merged" : null;
+    return runHasPullRequest(run) ? "Merged" : null;
   }
   return "Open";
 }
@@ -121,7 +124,10 @@ export function chatStatusTone(status: string): "run" | "ok" | "err" | "idle" {
 
 export function recentAgentRuns(runs: Run[], limit = 8): Run[] {
   return [...runs]
-    .filter((run) => run.status !== "ARCHIVED" && run.status !== "EXPIRED")
+    .filter((run) => {
+      if (run.status === "ARCHIVED" || run.status === "EXPIRED") return runHasPullRequest(run);
+      return true;
+    })
     .sort((left, right) => runTimestamp(right).localeCompare(runTimestamp(left)) || right.createdAt.localeCompare(left.createdAt))
     .slice(0, limit);
 }

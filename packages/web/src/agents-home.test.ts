@@ -80,6 +80,14 @@ test("account helpers and card list stay free of desk copy", () => {
   const listed = recentAgentRuns([
     { id: "1", status: "IDLE", createdAt: "2026-09-12T00:00:00.000Z", updatedAt: "2026-09-12T00:00:00.000Z", pullRequests: [], repoUrls: [] } as never,
     { id: "2", status: "ARCHIVED", createdAt: "2026-09-11T00:00:00.000Z", updatedAt: "2026-09-11T00:00:00.000Z", pullRequests: [], repoUrls: [] } as never,
+    {
+      id: "3",
+      status: "ARCHIVED",
+      createdAt: "2026-09-10T00:00:00.000Z",
+      updatedAt: "2026-09-10T00:00:00.000Z",
+      pullRequests: [{ repoUrl: "", branch: "", url: "https://example.com/pr/9", draft: false, number: 9, title: "x" }],
+      repoUrls: [],
+    } as never,
   ]);
-  assert.deepEqual(listed.map((run) => run.id), ["1"]);
+  assert.deepEqual(listed.map((run) => run.id), ["1", "3"]);
 });

@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import type { Run } from "@neo-bot/contracts/run";
+import { runDisplayTitle, type Run } from "@neo-bot/contracts/run";
 import {
   formatFilesLabel,
   formatRelativeAge,
@@ -10,7 +10,7 @@ import {
   runWorkspaceLabel,
   type DiffStat,
 } from "../agents-home";
-import { modelLabel, runListTitle } from "../format";
+import { modelLabel } from "../format";
 import { IconMark } from "../icons";
 
 type Props = {
@@ -21,11 +21,11 @@ type Props = {
 };
 
 function ChangeCounts({ stat }: { stat?: DiffStat }) {
-  if (!hasDiffStat(stat)) return null;
+  if (!hasDiffStat(stat) || !stat) return null;
   return (
     <span className="change-counts">
-      {stat && stat.added > 0 ? <span className="change-add">+{stat.added}</span> : null}
-      {stat && stat.deleted > 0 ? <span className="change-del">-{stat.deleted}</span> : null}
+      {stat.added > 0 ? <span className="change-add">+{stat.added}</span> : null}
+      {stat.deleted > 0 ? <span className="change-del">−{stat.deleted}</span> : null}
     </span>
   );
 }
@@ -35,8 +35,13 @@ export function AgentsHome({ runs, stats, onOpenRun, children }: Props) {
   return (
     <section className={`agents-landing${cards.length ? " has-cards" : " is-empty"}`} id="agents-home">
       <div className="agents-stack">
-        <p className="agents-context">Start from scratch</p>
-        {children}
+        <div className="agents-hero">
+          <p className="agents-context">
+            Start from scratch
+            <span className="agents-context-chevron" aria-hidden="true" />
+          </p>
+          {children}
+        </div>
         {cards.length > 0 ? (
           <ul className="agent-cards">
             {cards.map((run) => {
@@ -53,7 +58,7 @@ export function AgentsHome({ runs, stats, onOpenRun, children }: Props) {
                       ) : null}
                     </div>
                     <div className="agent-card-body">
-                      <strong className="agent-card-title">{runListTitle(run)}</strong>
+                      <strong className="agent-card-title">{runDisplayTitle(run)}</strong>
                       <p className="agent-card-meta">
                         <IconMark size={12} />
                         <span>{modelLabel(null, run.model)}</span>

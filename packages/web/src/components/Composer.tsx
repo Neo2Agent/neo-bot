@@ -346,8 +346,12 @@ export function Composer({
               <button type="button" id="abort" className="stop" aria-label={stopping ? "停止中" : "停止生成"} onClick={onStop}>
                 <span className="stop-icon" aria-hidden="true" />
               </button>
+            ) : empty ? (
+              <button type="button" className="composer-voice" aria-label="Voice" disabled>
+                <IconMic size={16} />
+              </button>
             ) : (
-              <button type="submit" id="send" className="send" disabled={sendLocked || empty || busy} aria-label={busy ? "发送中" : "发送"}>
+              <button type="submit" id="send" className="send" disabled={sendLocked || busy} aria-label={busy ? "发送中" : "发送"}>
                 <IconArrowUp size={16} />
               </button>
             )}

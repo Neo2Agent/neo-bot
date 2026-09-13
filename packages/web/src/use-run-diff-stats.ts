@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { Run } from "@neo-bot/contracts/run";
 import { api, readJson } from "./api";
-import { parseDiffStat, runTimestamp, type DiffStat } from "./agents-home";
+import { parseDiffStat, recentAgentRuns, runTimestamp, type DiffStat } from "./agents-home";
 import { isShelvedRun } from "./pins";
 
 const MAX_RUNS = 20;
@@ -9,19 +9,25 @@ const MAX_RUNS = 20;
 export function useRunDiffStats(token: string, runs: Run[], enabled: boolean): Record<string, DiffStat> {
   const [stats, setStats] = useState<Record<string, DiffStat>>({});
   const cacheRef = useRef<Record<string, { stamp: string; stat: DiffStat }>>({});
+  const targets = useMemo(() => {
+    const live = runs.filter((run) => !isShelvedRun(run.status));
+    const cards = recentAgentRuns(runs, MAX_RUNS);
+    const seen = new Set<string>();
+    const next: Run[] = [];
+    for (const run of [...live, ...cards]) {
+      if (seen.has(run.id) || next.length >= MAX_RUNS) continue;
+      seen.add(run.id);
+      next.push(run);
+    }
+    return next;
+  }, [runs]);
   const signature = useMemo(
-    () =>
-      runs
-        .filter((run) => !isShelvedRun(run.status))
-        .slice(0, MAX_RUNS)
-        .map((run) => `${run.id}:${runTimestamp(run)}`)
-        .join("|"),
-    [runs],
+    () => targets.map((run) => `${run.id}:${runTimestamp(run)}`).join("|"),
+    [targets],
   );
 
   useEffect(() => {
     if (!enabled || !token || !signature) return;
-    const targets = runs.filter((run) => !isShelvedRun(run.status)).slice(0, MAX_RUNS);
     let cancelled = false;
     void (async () => {
       const next: Record<string, DiffStat> = {};
@@ -56,7 +62,7 @@ export function useRunDiffStats(token: string, runs: Run[], enabled: boolean): R
     return () => {
       cancelled = true;
     };
-  }, [enabled, signature, token, runs]);
+  }, [enabled, signature, token, targets]);
 
   return stats;
 }

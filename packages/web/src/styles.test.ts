@@ -30,10 +30,12 @@ test("agents home uses the locked Cursor /agents tokens", () => {
   assert.match(css, /--ok:\s*#1f8a4c/);
   assert.match(css, /--merged:\s*#7c3aed/);
   assert.match(css, /--err:\s*#d92d20/);
-  assert.match(css, /grid-template-columns:\s*236px minmax\(0, 1fr\)/);
+  assert.match(css, /grid-template-columns:\s*220px minmax\(0, 1fr\)/);
   assert.match(css, /\.agents-landing/);
+  assert.match(css, /\.agents-hero/);
   assert.match(css, /\.composer\.agents-composer/);
   assert.match(css, /max-width:\s*510px/);
+  assert.match(css, /min\(600px/);
   assert.match(css, /\.agent-card/);
   assert.match(css, /\.agent-badge\.is-open/);
   assert.match(css, /\.agent-badge\.is-merged/);

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { Run } from "@neo-bot/contracts/run";
+import { runDisplayTitle, type Run } from "@neo-bot/contracts/run";
 import {
   accountInitials,
   accountName,
@@ -211,7 +211,7 @@ export function Sidebar({
         }}
       >
         <span className={`chat-dot is-${tone}${running ? " is-pulse" : ""}`} aria-hidden="true" />
-        <span className="run-title">{runListTitle(run)}</span>
+        <span className="run-title">{runDisplayTitle(run)}</span>
         {hasDiffStat(stat) ? <ChangeCounts stat={stat} /> : <span className="chat-age">{formatRelativeAge(runTimestamp(run))}</span>}
       </div>
     );
