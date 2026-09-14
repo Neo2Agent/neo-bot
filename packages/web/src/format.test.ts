@@ -16,6 +16,7 @@ import {
   toolActivityLabel,
   toolArgPreview,
   toolDisplayName,
+  toolRowPresentation,
 } from "./format.js";
 
 test("runListPlaceSuffix labels Remote separately from This Computer", () => {
@@ -80,6 +81,8 @@ test("toolArgPreview prefers command and path", () => {
 test("toolActivityLabel is a gray explore / shell / name row", () => {
   assert.equal(toolActivityKind("read"), "explore");
   assert.equal(toolActivityKind("bash"), "shell");
+  assert.equal(toolActivityKind("terminal"), "shell");
+  assert.equal(toolActivityKind("exec"), "shell");
   assert.equal(toolActivityKind("edit"), "file");
   assert.equal(toolActivityKind("neo_pr_create"), "default");
   assert.equal(humanizeToolName("neo_artifact_upload"), "uploaded");
@@ -94,6 +97,24 @@ test("toolActivityLabel is a gray explore / shell / name row", () => {
     toolActivityLabel({ name: "neo_artifact_upload", args: { path: "hello.txt" } }, "neo_artifact_upload"),
     "uploaded hello.txt",
   );
+});
+
+test("toolRowPresentation always paints a collapsed $ mini-card for shell tools", () => {
+  const shell = toolRowPresentation(
+    { name: "bash", status: "completed", args: { command: "ls -la" }, output: "README.md\n" },
+    false,
+  );
+  assert.equal(shell.kind, "shell");
+  assert.equal(shell.label, "$ ls -la");
+  assert.equal(shell.className, "tool is-compact is-shell");
+  assert.equal(shell.open, false);
+  const running = toolRowPresentation({ name: "terminal", status: "running", args: { command: "pwd" } }, true);
+  assert.equal(running.label, "$ pwd");
+  assert.equal(running.className, "tool run is-compact is-shell");
+  assert.equal(running.open, true);
+  const explore = toolRowPresentation({ name: "read", status: "completed", args: { path: "src/app.ts" } }, false);
+  assert.equal(explore.label, "read");
+  assert.doesNotMatch(explore.className, /is-compact/);
 });
 
 test("fileToolDiff renders edit old/new text", () => {

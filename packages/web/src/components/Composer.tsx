@@ -351,9 +351,9 @@ export function Composer({
                 <span className="stop-icon" aria-hidden="true" />
               </button>
             ) : empty && !followup ? (
-              <button type="button" className="composer-voice" aria-label="Voice" disabled>
+              <span className="composer-voice" aria-hidden="true">
                 <IconMic size={16} />
-              </button>
+              </span>
             ) : (
               <button type="submit" id="send" className="send" disabled={sendLocked || empty || busy} aria-label={busy ? "发送中" : "发送"}>
                 <IconArrowUp size={16} />

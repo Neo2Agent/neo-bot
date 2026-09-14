@@ -88,6 +88,26 @@ test("mock SSE is OpenAI-compatible", () => {
   assert.match(sse, /data: \[DONE\]/);
 });
 
+test("mock emits a bash tool call when the prompt asks for a shell command", () => {
+  const tools = [
+    { type: "function", function: { name: "edit" } },
+    { type: "function", function: { name: "bash" } },
+  ];
+  const call = pickMockToolCall({
+    messages: [{ role: "user", content: "Run a bash command: ls -la" }],
+    tools,
+  });
+  assert.equal(call?.name, "bash");
+  assert.equal((call?.args as { command?: string }).command, "ls -la");
+  assert.equal(
+    pickMockToolCall({
+      messages: [{ role: "user", content: "Edit hello.txt and add a tools line." }],
+      tools,
+    })?.name,
+    "edit",
+  );
+});
+
 test("mock emits an edit tool call when the prompt asks to touch files", () => {
   const tools = [{ type: "function", function: { name: "edit" } }, { type: "function", function: { name: "write" } }];
   const call = pickMockToolCall({

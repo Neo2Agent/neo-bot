@@ -37,6 +37,7 @@ test("agents home uses the locked Cursor /agents tokens", () => {
   assert.match(css, /\.agents-landing/);
   assert.match(css, /\.agents-hero/);
   assert.match(css, /\.composer\.agents-composer/);
+  assert.match(css, /\.composer\.agents-composer \.composer-voice\s*\{[^}]*pointer-events:\s*none/);
   assert.match(css, /max-width:\s*510px/);
   assert.match(css, /min\(600px/);
   assert.match(css, /\.agent-card/);

@@ -102,7 +102,8 @@ export type MockToolCall = { name: string; args: Record<string, unknown> };
 const REFUSE_TOOLS =
   /不要调用工具|不要修改文件|只阅读和回答|do not (use|call) tools|don't (use|call) tools|only (read|reply)/i;
 const WANT_FILE_TOOLS =
-  /\b(write|edit|read|bash|grep|diff|file|path|touch|artifact|upload)\b|hello\.txt|readme|文件|编辑|改|添加|修改|更新|工具|产物|附件/i;
+  /\b(write|edit|read|bash|grep|diff|file|path|touch|artifact|upload|shell|terminal)\b|hello\.txt|readme|文件|编辑|改|添加|修改|更新|工具|产物|附件/i;
+const WANT_SHELL_TOOLS = /\b(bash|shell|terminal)\b|\$\s+\S/i;
 const WANT_ARTIFACTS = /artifact|产物|附件|upload/i;
 const MOCK_FILE_TOOLS = new Set(["write", "edit"]);
 
@@ -281,6 +282,12 @@ export function pickMockToolCall(body: ChatCompletionBody): MockToolCall | null 
     return null;
   }
   const names = listedToolNames(body);
+  if (WANT_SHELL_TOOLS.test(text) && names.includes("bash")) {
+    return {
+      name: "bash",
+      args: { command: "ls -la" },
+    };
+  }
   if (WANT_ARTIFACTS.test(text) && names.includes("write")) {
     return {
       name: "write",
