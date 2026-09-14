@@ -102,6 +102,9 @@ test("login wall is a sparse light authenticator column", () => {
   assert.match(css, /\.auth-card input:focus\s*\{[^}]*border-color:\s*var\(--accent\)/);
   assert.match(css, /\.auth-card input:focus\s*\{[^}]*box-shadow:\s*0 0 0 1px var\(--accent\)/);
   assert.match(css, /\.auth-card button\.auth-submit[\s\S]*?background:\s*var\(--btn-primary\)/);
+  assert.match(css, /\.auth-card button\.auth-submit[\s\S]*?opacity:\s*1/);
+  assert.match(css, /\.auth-card \.auth-switch button[\s\S]*?color:\s*#a3a3a3/);
+  assert.match(css, /\.auth-card \.auth-token-switch button[\s\S]*?color:\s*#a3a3a3/);
   assert.match(css, /--stage:\s*#f7f7f7/);
   assert.match(css, /--line:\s*#e5e5e5/);
   assert.match(css, /--text:\s*#2b2b2b/);
@@ -117,5 +120,8 @@ test("login wall is a sparse light authenticator column", () => {
   assert.match(authGate, /type="password"/);
   assert.match(authGate, /name="account"/);
   assert.match(authGate, /onMode\("register"\)/);
+  assert.match(authGate, /使用服务令牌/);
+  assert.match(authGate, /disabled=\{busy\}/);
+  assert.doesNotMatch(authGate, /disabled=\{busy \|\| !canSubmit\}/);
   assert.doesNotMatch(authGate, /value="123456"/);
 });
