@@ -12,6 +12,7 @@ import { isRemoteControlTarget, type AgentMode, type ImageRef, type Run } from "
 import { isDeskHostedTarget, type Desk, type DeskWorkspace } from "@neo-bot/contracts/desk";
 import { api, hydrateDeskToken, readJson, readToken, writeToken } from "./api";
 import { hasSavedSession } from "./session";
+import { AGENTS_HREF, applyAuthLocation } from "./app-route";
 import { WEB_V1 } from "./scope";
 import { deskBridge, isDeskApp, withApiBase, type DeskTarget } from "./desk";
 import { remoteControlSendLock } from "./desk-live";
@@ -690,7 +691,7 @@ export function App() {
     setMoreOpen(false);
     setPlusOpen(false);
     writeLastRunId(null);
-    history.replaceState(null, "", "/");
+    history.replaceState(null, "", AGENTS_HREF);
   }, [closeStream]);
 
   const refreshRunSurfaces = useCallback((id: string) => {
@@ -896,11 +897,12 @@ export function App() {
     setMainTab("chat");
     setSessionTab("chat");
     if (hashCatalog()) {
-      history.replaceState(null, "", runId ? `/#/runs/${runId}` : "/");
+      history.replaceState(null, "", runId ? `/#/runs/${runId}` : AGENTS_HREF);
     }
   }, [runId]);
 
   const finishLogin = useCallback(async () => {
+    applyAuthLocation(true);
     const desk = deskBridge();
     if (desk) {
       await desk.setToken(tokenRef.current).catch(() => undefined);
@@ -1283,11 +1285,13 @@ export function App() {
           persistToken("");
           setAuthError("请重新登录");
           setAuthOpen(true);
+          applyAuthLocation(false);
         }
         return;
       }
       persistToken("");
       setAuthOpen(true);
+      applyAuthLocation(false);
     })();
     return () => {
       cancelled = true;
@@ -1376,6 +1380,7 @@ export function App() {
 
   useEffect(() => {
     const syncHash = () => {
+      applyAuthLocation(Boolean(tokenRef.current));
       const invite = hashInviteToken();
       const projectId = hashProjectId();
       if (hashAutomations()) {
@@ -1884,6 +1889,7 @@ export function App() {
             setAuthPassword("");
             setAuthError("");
             setAuthOpen(true);
+            applyAuthLocation(false);
           }}
           onLogout={() => {
             void api(token, "/v1/auth/logout", { method: "POST" });
@@ -1896,6 +1902,7 @@ export function App() {
             setRuns([]);
             resetComposer();
             setAuthOpen(true);
+            applyAuthLocation(false);
           }}
         />
         <main className="main">

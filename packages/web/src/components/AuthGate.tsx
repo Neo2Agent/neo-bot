@@ -179,7 +179,13 @@ export function AuthGate({
         <p className={error.includes("注册成功") ? "auth-error is-ok" : "auth-error"} id="auth-error" hidden={!error}>
           {error}
         </p>
-        <button type="submit" id="auth-submit" className="auth-submit" disabled={busy || !canSubmit}>
+        <button
+          type="submit"
+          id="auth-submit"
+          className="auth-submit"
+          disabled={busy}
+          aria-disabled={busy || !canSubmit}
+        >
           {submit}
         </button>
         <p className="auth-switch">
