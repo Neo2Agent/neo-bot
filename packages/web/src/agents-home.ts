@@ -36,6 +36,11 @@ export function hasDiffStat(stat?: DiffStat | null): boolean {
   return Boolean(stat && (stat.files > 0 || stat.added > 0 || stat.deleted > 0));
 }
 
+/** Always a green/red pair when a diff stat is shown. */
+export function formatChangeCounts(stat: Pick<DiffStat, "added" | "deleted">): { added: string; deleted: string } {
+  return { added: `+${stat.added}`, deleted: `−${stat.deleted}` };
+}
+
 export function formatFilesLabel(files: number): string {
   return `${files} ${files === 1 ? "file" : "files"}`;
 }

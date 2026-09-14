@@ -11,9 +11,11 @@ import {
   parseUnifiedDiff,
   resolveChatModel,
   runListPlaceSuffix,
+  humanizeToolName,
   toolActivityKind,
   toolActivityLabel,
   toolArgPreview,
+  toolDisplayName,
 } from "./format.js";
 
 test("runListPlaceSuffix labels Remote separately from This Computer", () => {
@@ -80,11 +82,18 @@ test("toolActivityLabel is a gray explore / shell / name row", () => {
   assert.equal(toolActivityKind("bash"), "shell");
   assert.equal(toolActivityKind("edit"), "file");
   assert.equal(toolActivityKind("neo_pr_create"), "default");
+  assert.equal(humanizeToolName("neo_artifact_upload"), "uploaded");
+  assert.equal(humanizeToolName("neo_pr_create"), "pr create");
+  assert.equal(toolDisplayName({ name: "neo_artifact_upload" }), "uploaded");
   assert.equal(toolActivityLabel({ name: "read", args: { path: "src/app.ts" } }, "read"), "explored src/app.ts");
   assert.equal(toolActivityLabel({ name: "grep" }, "grep"), "explored");
   assert.equal(toolActivityLabel({ name: "bash", args: { command: "ls -la" } }, "bash"), "$ ls -la");
   assert.equal(toolActivityLabel({ name: "edit", args: { path: "hello.txt" } }, "edit"), "hello.txt");
-  assert.equal(toolActivityLabel({ name: "neo_pr_create", args: { title: "Open" } }, "neo_pr_create"), "neo_pr_create");
+  assert.equal(toolActivityLabel({ name: "neo_pr_create", args: { title: "Open" } }, "neo_pr_create"), "pr create Open");
+  assert.equal(
+    toolActivityLabel({ name: "neo_artifact_upload", args: { path: "hello.txt" } }, "neo_artifact_upload"),
+    "uploaded hello.txt",
+  );
 });
 
 test("fileToolDiff renders edit old/new text", () => {

@@ -148,14 +148,31 @@ export function toolActivityKind(name: string): ToolActivityKind {
   return "default";
 }
 
+/** Strip `neo_` / underscores so transcript rows never lead with a raw tool id. */
+export function humanizeToolName(name: string): string {
+  if (name === "neo_artifact_upload") return "uploaded";
+  const friendly = name.replace(/^neo_/, "").replace(/_/g, " ").trim();
+  return friendly || name;
+}
+
+export function toolDisplayName(tool: Pick<TranscriptTool, "name" | "details">): string {
+  const nested = typeof tool.details?.subagent === "string" ? tool.details.subagent : "";
+  const name = humanizeToolName(tool.name);
+  if (nested && tool.name !== "neo_subagent") {
+    return `${nested} / ${name}`;
+  }
+  return name;
+}
+
 export function toolActivityLabel(tool: Pick<TranscriptTool, "name" | "args">, displayName: string): string {
   const kind = toolActivityKind(tool.name);
   const preview = toolArgPreview(tool.args);
   const useful = Boolean(preview) && preview !== "{}" && preview !== "[]";
+  const friendly = displayName && displayName !== tool.name ? displayName : humanizeToolName(tool.name);
   if (kind === "explore") return useful ? `explored ${preview}` : "explored";
   if (kind === "shell") return useful ? `$ ${preview}` : "$";
-  if (kind === "file") return useful ? preview : displayName;
-  return displayName;
+  if (kind === "file") return useful ? preview : friendly;
+  return useful ? `${friendly} ${preview}` : friendly;
 }
 
 export function toolArgPreview(args: unknown): string {

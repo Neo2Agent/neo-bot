@@ -5647,7 +5647,7 @@ html.is-narrow,
 
 .agent-card {
   display: grid;
-  grid-template-columns: 108px minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
   align-items: start;
   gap: 20px;
   width: 100%;
@@ -5665,6 +5665,10 @@ html.is-narrow,
 .agent-card:hover {
   background: #fff;
   border-color: #dedede;
+}
+
+.agent-card.has-rail {
+  grid-template-columns: 108px minmax(0, 1fr);
 }
 
 .agent-card-rail {
@@ -6257,14 +6261,25 @@ html.is-narrow,
 
 .git-pr {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px 10px;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
   padding: 12px 16px 8px;
   border-bottom: 1px solid var(--line);
 }
 
+.git-pr-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
 .git-pr-link {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   color: var(--text);
   font-size: 13px;
   font-weight: 600;
@@ -6276,8 +6291,10 @@ html.is-narrow,
 }
 
 .git-pr-branch {
-  flex: 1 0 100%;
   margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   color: var(--muted);
   font-size: 12px;
 }

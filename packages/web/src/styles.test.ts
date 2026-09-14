@@ -7,6 +7,7 @@ import test from "node:test";
 const here = path.dirname(fileURLToPath(import.meta.url));
 const css = readFileSync(path.join(here, "styles.css"), "utf8");
 const authGate = readFileSync(path.join(here, "components/AuthGate.tsx"), "utf8");
+const gitPane = readFileSync(path.join(here, "components/GitPane.tsx"), "utf8");
 
 test("web shell keeps the original cool-gray chrome", () => {
   assert.match(css, /--bg:\s*#ffffff/);
@@ -39,6 +40,7 @@ test("agents home uses the locked Cursor /agents tokens", () => {
   assert.match(css, /max-width:\s*510px/);
   assert.match(css, /min\(600px/);
   assert.match(css, /\.agent-card/);
+  assert.match(css, /\.agent-card\.has-rail\s*\{[^}]*108px minmax\(0, 1fr\)/);
   assert.match(css, /\.agent-badge\.is-open/);
   assert.match(css, /\.agent-badge\.is-merged/);
   assert.doesNotMatch(css, /Codebase Early Beta/);
@@ -52,6 +54,8 @@ test("run conversation uses a three-column Cursor-like chrome", () => {
   assert.match(css, /grid-template-areas:\s*"workspace git"/);
   assert.match(css, /minmax\(0, 1fr\) minmax\(0, 1fr\)/);
   assert.match(css, /\.git-pane/);
+  assert.match(css, /\.git-pr-row/);
+  assert.match(css, /\.git-pr-link\s*\{[^}]*text-overflow:\s*ellipsis/);
   assert.match(css, /\.run-head/);
   assert.match(css, /\.run-meta/);
   assert.match(css, /\.setup-fold/);
@@ -73,6 +77,7 @@ test("run conversation uses a three-column Cursor-like chrome", () => {
   assert.match(css, /grid-template-columns:\s*48px minmax\(0, 1fr\)/);
   assert.doesNotMatch(css, /Subscriptions/);
   assert.doesNotMatch(css, /Desktop tab/);
+  assert.doesNotMatch(gitPane, /Review|Commits|Desktop|Terminal|Desk/);
   assert.match(css, /--stage:\s*#f7f7f7/);
   assert.match(css, /--merged:\s*#7c3aed/);
 });
