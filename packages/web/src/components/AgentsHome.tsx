@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { runDisplayTitle, type Run } from "@neo-bot/contracts/run";
 import {
+  formatChangeCounts,
   formatFilesLabel,
   formatRelativeAge,
   hasDiffStat,
@@ -22,10 +23,11 @@ type Props = {
 
 function ChangeCounts({ stat }: { stat?: DiffStat }) {
   if (!hasDiffStat(stat) || !stat) return null;
+  const pair = formatChangeCounts(stat);
   return (
     <span className="change-counts">
-      {stat.added > 0 ? <span className="change-add">+{stat.added}</span> : null}
-      {stat.deleted > 0 ? <span className="change-del">−{stat.deleted}</span> : null}
+      <span className="change-add">{pair.added}</span>
+      <span className="change-del">{pair.deleted}</span>
     </span>
   );
 }
@@ -47,16 +49,19 @@ export function AgentsHome({ runs, stats, onOpenRun, children }: Props) {
             {cards.map((run) => {
               const stat = stats[run.id];
               const badge = runPrBadge(run);
+              const rail = hasDiffStat(stat) ? stat : null;
               return (
                 <li key={run.id}>
-                  <button type="button" className="agent-card" onClick={() => onOpenRun(run.id)}>
-                    <div className="agent-card-rail">
-                      {hasDiffStat(stat) ? <span className="agent-card-files">{formatFilesLabel(stat.files)}</span> : null}
-                      <ChangeCounts stat={stat} />
-                      {badge ? (
-                        <span className={`agent-badge is-${badge.toLowerCase()}`}>{badge}</span>
-                      ) : null}
-                    </div>
+                  <button type="button" className={`agent-card${rail ? " has-rail" : ""}`} onClick={() => onOpenRun(run.id)}>
+                    {rail ? (
+                      <div className="agent-card-rail">
+                        <span className="agent-card-files">{formatFilesLabel(rail.files)}</span>
+                        <ChangeCounts stat={rail} />
+                        {badge ? (
+                          <span className={`agent-badge is-${badge.toLowerCase()}`}>{badge}</span>
+                        ) : null}
+                      </div>
+                    ) : null}
                     <div className="agent-card-body">
                       <strong className="agent-card-title">{runDisplayTitle(run)}</strong>
                       <p className="agent-card-meta">

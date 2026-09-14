@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   conversationPrBadge,
+  conversationPrTitle,
   environmentLine,
   isSameUserPrompt,
   parseDiffFiles,
@@ -75,6 +76,13 @@ test("conversationPrBadge hides when no PR and maps Open / Draft / Merged", () =
   assert.equal(conversationPrBadge({ status: "IDLE" }, { url: "https://example.com/pr/1", draft: false }), "Open");
   assert.equal(conversationPrBadge({ status: "RUNNING" }, { url: "https://example.com/pr/1", draft: true }), "Draft");
   assert.equal(conversationPrBadge({ status: "ARCHIVED" }, { url: "https://example.com/pr/1", draft: false }), "Merged");
+});
+
+test("conversationPrTitle truncates to the PR title and never invents a PR", () => {
+  assert.equal(conversationPrTitle({ title: "feat: observe rollback", number: 29 }), "feat: observe rollback");
+  assert.equal(conversationPrTitle({ title: "  ", number: 29 }), "#29");
+  assert.equal(conversationPrTitle({ title: "", number: null }, "Edit hello.txt"), "Edit hello.txt");
+  assert.equal(conversationPrTitle(null), "Pull request");
 });
 
 test("first user bubble matches the run title", () => {

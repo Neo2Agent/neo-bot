@@ -1,7 +1,7 @@
 import type { ProjectAsset } from "@neo-bot/contracts/project-asset";
 import { ArtifactsPanel } from "./ArtifactsPanel";
 import { DiffPanel } from "./DiffPanel";
-import type { ConversationPrBadge } from "../run-chrome";
+import { conversationPrTitle, type ConversationPrBadge } from "../run-chrome";
 
 type Artifact = { name: string; url?: string; contentType?: string };
 
@@ -9,6 +9,7 @@ type Props = {
   tab: "diff" | "artifacts";
   onTab: (tab: "diff" | "artifacts") => void;
   pr?: { url?: string; draft?: boolean; number?: number | null; title?: string } | null;
+  prTitleFallback?: string;
   prBadge?: ConversationPrBadge | null;
   branchName?: string | null;
   baseBranch?: string | null;
@@ -33,6 +34,7 @@ export function GitPane({
   tab,
   onTab,
   pr,
+  prTitleFallback = "",
   prBadge,
   branchName,
   baseBranch,
@@ -53,15 +55,17 @@ export function GitPane({
   onOpenArtifact,
 }: Props) {
   const showPr = Boolean(pr?.url);
+  const prTitle = showPr ? conversationPrTitle(pr, prTitleFallback) : "";
   return (
     <aside className="inspector git-pane" id="run-git">
       {showPr ? (
         <div className="git-pr">
-          {prBadge ? <span className={`agent-badge is-${prBadge.toLowerCase()}`}>{prBadge}</span> : null}
-          <a className="git-pr-link" href={pr?.url} target="_blank" rel="noreferrer">
-            {pr?.number ? `#${pr.number}` : "PR"}
-            {pr?.title ? ` ${pr.title}` : ""}
-          </a>
+          <div className="git-pr-row">
+            <a className="git-pr-link" href={pr?.url} target="_blank" rel="noreferrer" title={prTitle}>
+              {prTitle}
+            </a>
+            {prBadge ? <span className={`agent-badge is-${prBadge.toLowerCase()}`}>{prBadge}</span> : null}
+          </div>
           {branchName ? (
             <p className="git-pr-branch">
               {branchName}

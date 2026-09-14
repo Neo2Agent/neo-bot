@@ -12,10 +12,11 @@ import {
   toolActivityKind,
   toolActivityLabel,
   toolArgPreview,
+  toolDisplayName,
 } from "../format";
 import { fileBaseName, IconCheck, IconChevronDown, IconError, IconPath, IconSpinner, IconTool } from "../icons";
 import { MarkdownBody } from "../markdown";
-import { hasDiffStat, type DiffStat } from "../agents-home";
+import { formatChangeCounts, hasDiffStat, type DiffStat } from "../agents-home";
 import { isSameUserPrompt, type DiffFile } from "../run-chrome";
 import { shouldShowThinking } from "../turn";
 import { transcriptUserImageSrc } from "../user-image";
@@ -51,14 +52,6 @@ function ToolStatus({ tool }: { tool: TranscriptTool }) {
   if (tool.status === "running") return <IconSpinner size={14} />;
   if (tool.isError) return <IconError size={14} />;
   return <IconCheck size={14} />;
-}
-
-function toolDisplayName(tool: TranscriptTool): string {
-  const nested = typeof tool.details?.subagent === "string" ? tool.details.subagent : "";
-  if (nested && tool.name !== "neo_subagent") {
-    return `${nested} / ${tool.name}`;
-  }
-  return tool.name === "neo_subagent" ? "subagent" : tool.name;
 }
 
 function readSubagentTasks(details?: Record<string, unknown>): SubagentTask[] {
@@ -500,8 +493,8 @@ export function Transcript({
               </span>
               {hasDiffStat(diffStat) && diffStat ? (
                 <span className="change-counts">
-                  {diffStat.added > 0 ? <span className="change-add">+{diffStat.added}</span> : null}
-                  {diffStat.deleted > 0 ? <span className="change-del">−{diffStat.deleted}</span> : null}
+                  <span className="change-add">{formatChangeCounts(diffStat).added}</span>
+                  <span className="change-del">{formatChangeCounts(diffStat).deleted}</span>
                 </span>
               ) : null}
             </summary>
@@ -514,8 +507,8 @@ export function Transcript({
                       <span className="files-changed-path">{fileBaseName(file.path)}</span>
                     </span>
                     <span className="change-counts">
-                      {file.added > 0 ? <span className="change-add">+{file.added}</span> : null}
-                      {file.deleted > 0 ? <span className="change-del">−{file.deleted}</span> : null}
+                      <span className="change-add">{formatChangeCounts(file).added}</span>
+                      <span className="change-del">{formatChangeCounts(file).deleted}</span>
                     </span>
                   </li>
                 ))}

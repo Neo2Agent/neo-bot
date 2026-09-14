@@ -1,7 +1,7 @@
 import { useState } from "react";
 import type { ProjectAsset } from "@neo-bot/contracts/project-asset";
 import { api, readJson } from "../api";
-import { artifactKind, artifactKindLabel, previewKind } from "../artifact.js";
+import { artifactKind, artifactKindLabel, artifactPreviewEmptyCopy, previewKind } from "../artifact.js";
 import { IconClose, IconFileKind } from "../icons.js";
 
 type Artifact = { name: string; url?: string; contentType?: string };
@@ -139,13 +139,18 @@ export function ArtifactsPanel({
             </div>
           ) : kind === "html" && preview.url ? (
             <iframe className="artifact-preview-frame" title={preview.name} src={preview.url} sandbox="allow-scripts" />
-          ) : git ? (
-            <div className="artifact-preview-empty" />
           ) : (
-            <div className="artifact-preview-empty">
-              <IconFileKind kind={artifactKind(preview)} size={28} />
-              <p>{`${artifactKindLabel(preview)} 文件，无法预览`}</p>
-              {preview.url || onOpen ? (
+            <div className="artifact-preview-empty" data-preview-empty="cannot">
+              {git ? null : <IconFileKind kind={artifactKind(preview)} size={28} />}
+              <p>
+                {artifactPreviewEmptyCopy({
+                  git,
+                  selected: true,
+                  hasArtifacts: artifacts.length > 0,
+                  kindLabel: artifactKindLabel(preview),
+                })}
+              </p>
+              {!git && (preview.url || onOpen) ? (
                 <button
                   type="button"
                   className="ghost"
@@ -164,8 +169,8 @@ export function ArtifactsPanel({
           )}
             </>
           ) : (
-            <div className="artifact-preview-empty">
-              <p>{git ? (artifacts.length ? "Select a file" : "No artifacts yet.") : "选择一个文件"}</p>
+            <div className="artifact-preview-empty" data-preview-empty="select">
+              <p>{artifactPreviewEmptyCopy({ git, selected: false, hasArtifacts: artifacts.length > 0 })}</p>
             </div>
           )}
         </div>

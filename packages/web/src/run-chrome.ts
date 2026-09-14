@@ -93,6 +93,17 @@ export function conversationPrBadge(
   return "Open";
 }
 
+/** Title for the Git head. Empty unless a PR url already exists on the Run. */
+export function conversationPrTitle(
+  pr?: { number?: number | null; title?: string } | null,
+  fallback = "",
+): string {
+  const title = pr?.title?.replace(/\s+/g, " ").trim() || fallback.replace(/\s+/g, " ").trim();
+  if (title) return title;
+  if (pr?.number != null) return `#${pr.number}`;
+  return "Pull request";
+}
+
 export function conversationTitle(run: Pick<Run, "title" | "prompt">): string {
   return runDisplayTitle(run);
 }

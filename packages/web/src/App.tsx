@@ -2516,6 +2516,7 @@ export function App() {
               tab={gitTab}
               onTab={(id) => openSessionTab(id)}
               pr={pr}
+              prTitleFallback={currentRun ? conversationTitle(currentRun) : ""}
               prBadge={currentRun ? conversationPrBadge(currentRun, pr) : null}
               branchName={currentRun?.branchName}
               baseBranch={currentRun?.baseBranch}

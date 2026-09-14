@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { artifactKind, artifactKindLabel, previewKind, prettyBytes } from "./artifact.js";
+import { artifactKind, artifactKindLabel, artifactPreviewEmptyCopy, previewKind, prettyBytes } from "./artifact.js";
 import { parseProjectHash, projectHashHref } from "./project-route.js";
 
 test("previewKind maps html and images, ignores text", () => {
@@ -24,6 +24,16 @@ test("artifactKindLabel prefers a short badge over the raw type", () => {
   assert.equal(artifactKindLabel({ name: "shot.png" }), "图片");
   assert.equal(artifactKindLabel({ name: "notes.txt", contentType: "text/plain" }), "文本");
   assert.equal(artifactKindLabel({ name: "data.bin" }), "文件");
+});
+
+test("artifactPreviewEmptyCopy never leaves the pane blank", () => {
+  assert.equal(artifactPreviewEmptyCopy({ git: true, selected: false, hasArtifacts: true }), "Select a file");
+  assert.equal(artifactPreviewEmptyCopy({ git: true, selected: false, hasArtifacts: false }), "No artifacts yet.");
+  assert.equal(artifactPreviewEmptyCopy({ git: true, selected: true, hasArtifacts: true }), "Cannot preview this file");
+  assert.equal(
+    artifactPreviewEmptyCopy({ git: false, selected: true, hasArtifacts: true, kindLabel: "文本" }),
+    "文本 文件，无法预览",
+  );
 });
 
 test("prettyBytes uses the next unit past 1024", () => {

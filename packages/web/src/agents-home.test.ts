@@ -4,6 +4,7 @@ import {
   accountInitials,
   accountName,
   chatStatusTone,
+  formatChangeCounts,
   formatFilesLabel,
   formatRelativeAge,
   groupRunsByTime,
@@ -47,6 +48,11 @@ test("groupRunsByTime buckets Last 7 days then older", () => {
       ["Older", ["c"]],
     ],
   );
+});
+
+test("formatChangeCounts always emits a +N −M pair", () => {
+  assert.deepEqual(formatChangeCounts({ added: 2, deleted: 0 }), { added: "+2", deleted: "−0" });
+  assert.deepEqual(formatChangeCounts({ added: 930, deleted: 33 }), { added: "+930", deleted: "−33" });
 });
 
 test("runPrBadge maps live agents to Open and archived PRs to Merged", () => {
