@@ -1,4 +1,7 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import test from "node:test";
 import {
   AGENTS_HREF,
@@ -7,7 +10,10 @@ import {
   parseAppHash,
   resolveAuthLocation,
   runHref,
+  shouldResetRunChrome,
 } from "./app-route.js";
+
+const app = readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), "App.tsx"), "utf8");
 
 test("hash map splits login wall from agents shell and keeps run deep links", () => {
   assert.deepEqual(parseAppHash(""), { kind: "home", hash: "", runId: null });
@@ -53,4 +59,16 @@ test("applyAuthLocation replaces only when the hash must move", () => {
   seen.length = 0;
   assert.equal(applyAuthLocation(false, "#/runs/run_1", (url) => seen.push(url)), "/#/runs/run_1");
   assert.deepEqual(seen, []);
+});
+
+test("logged-in #/login and #/agents reset run-detail chrome; run deep links do not", () => {
+  assert.equal(shouldResetRunChrome(true, "#/login"), true);
+  assert.equal(shouldResetRunChrome(true, "#/agents"), true);
+  assert.equal(shouldResetRunChrome(true, ""), true);
+  assert.equal(shouldResetRunChrome(true, "#/runs/run_9"), false);
+  assert.equal(shouldResetRunChrome(true, "#/projects"), false);
+  assert.equal(shouldResetRunChrome(false, "#/login"), false);
+  assert.equal(shouldResetRunChrome(false, "#/agents"), false);
+  assert.match(app, /shouldResetRunChrome\(authed, location\.hash\)/);
+  assert.match(app, /resetComposer\(\)/);
 });

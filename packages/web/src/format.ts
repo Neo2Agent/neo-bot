@@ -131,7 +131,17 @@ export type ToolActivityKind = "shell" | "file" | "explore" | "default";
 
 export function toolActivityKind(name: string): ToolActivityKind {
   const n = name.toLowerCase();
-  if (n === "bash" || n === "shell" || n.startsWith("neo_diag")) return "shell";
+  if (
+    n === "bash" ||
+    n === "shell" ||
+    n === "sh" ||
+    n === "zsh" ||
+    n === "exec" ||
+    n === "terminal" ||
+    n.startsWith("neo_diag")
+  ) {
+    return "shell";
+  }
   if (n === "edit" || n === "write" || n === "apply_patch") return "file";
   if (
     n === "read" ||
@@ -173,6 +183,32 @@ export function toolActivityLabel(tool: Pick<TranscriptTool, "name" | "args">, d
   if (kind === "shell") return useful ? `$ ${preview}` : "$";
   if (kind === "file") return useful ? preview : friendly;
   return useful ? `${friendly} ${preview}` : friendly;
+}
+
+/** Compact `$ …` mini-card for shell/terminal tools; explore/file stay title-gated. */
+export function toolRowPresentation(
+  tool: Pick<TranscriptTool, "name" | "args" | "details" | "status" | "isError" | "output">,
+  compact: boolean,
+): { kind: ToolActivityKind; label: string; className: string; open: boolean } {
+  const kind = toolActivityKind(tool.name);
+  const name = toolDisplayName(tool);
+  const running = tool.status === "running" && !tool.output;
+  const card = compact || kind === "shell";
+  const parentSubagent = tool.name === "neo_subagent";
+  const subagent = parentSubagent || Boolean(tool.details?.subagent);
+  return {
+    kind,
+    label: card ? toolActivityLabel(tool, name) : name,
+    className: [
+      "tool",
+      tool.isError ? "err" : running ? "run" : "",
+      subagent ? "subagent" : "",
+      card ? `is-compact is-${kind}` : "",
+    ]
+      .filter(Boolean)
+      .join(" "),
+    open: running,
+  };
 }
 
 export function toolArgPreview(args: unknown): string {

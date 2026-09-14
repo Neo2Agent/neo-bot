@@ -5620,7 +5620,7 @@ html.is-narrow,
 .composer.agents-composer button.send,
 .composer.agents-composer button.send:disabled,
 .composer.agents-composer button.send:hover:not(:disabled),
-.composer.agents-composer button.composer-voice {
+.composer.agents-composer .composer-voice {
   width: 32px;
   height: 32px;
   min-height: 32px;
@@ -5632,7 +5632,11 @@ html.is-narrow,
   opacity: 1;
 }
 
-.composer.agents-composer button.composer-voice:disabled {
+.composer.agents-composer .composer-voice {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
   cursor: default;
 }
 

@@ -12,7 +12,7 @@ import { isRemoteControlTarget, type AgentMode, type ImageRef, type Run } from "
 import { isDeskHostedTarget, type Desk, type DeskWorkspace } from "@neo-bot/contracts/desk";
 import { api, hydrateDeskToken, readJson, readToken, writeToken } from "./api";
 import { hasSavedSession } from "./session";
-import { AGENTS_HREF, applyAuthLocation } from "./app-route";
+import { AGENTS_HREF, applyAuthLocation, shouldResetRunChrome } from "./app-route";
 import { WEB_V1 } from "./scope";
 import { deskBridge, isDeskApp, withApiBase, type DeskTarget } from "./desk";
 import { remoteControlSendLock } from "./desk-live";
@@ -1380,7 +1380,8 @@ export function App() {
 
   useEffect(() => {
     const syncHash = () => {
-      applyAuthLocation(Boolean(tokenRef.current));
+      const authed = Boolean(tokenRef.current);
+      applyAuthLocation(authed);
       const invite = hashInviteToken();
       const projectId = hashProjectId();
       if (hashAutomations()) {
@@ -1420,10 +1421,13 @@ export function App() {
       }
       setMainTab("chat");
       setInviteToken(null);
+      if (shouldResetRunChrome(authed, location.hash)) {
+        resetComposer();
+      }
     };
     window.addEventListener("hashchange", syncHash);
     return () => window.removeEventListener("hashchange", syncHash);
-  }, []);
+  }, [resetComposer]);
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {

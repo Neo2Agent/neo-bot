@@ -9,10 +9,8 @@ import {
   formatDuration,
   formatMessageTime,
   formatWhen,
-  toolActivityKind,
-  toolActivityLabel,
   toolArgPreview,
-  toolDisplayName,
+  toolRowPresentation,
 } from "../format";
 import { fileBaseName, IconCheck, IconChevronDown, IconError, IconPath, IconSpinner, IconTool } from "../icons";
 import { MarkdownBody } from "../markdown";
@@ -69,46 +67,32 @@ function readSubagentTasks(details?: Record<string, unknown>): SubagentTask[] {
 }
 
 function ToolCard({ tool, compact = false }: { tool: TranscriptTool; compact?: boolean }) {
-  const running = tool.status === "running" && !tool.output;
   const preview = toolArgPreview(tool.args);
   const diff = fileToolDiff(tool);
-  const kind = toolActivityKind(tool.name);
-  const name = toolDisplayName(tool);
-  const label = compact ? toolActivityLabel(tool, name) : name;
+  const { kind, label, className, open } = toolRowPresentation(tool, compact);
+  const card = compact || kind === "shell";
   const inline = compact && (kind === "explore" || kind === "default");
   const preRef = useRef<HTMLPreElement>(null);
   const parentSubagent = tool.name === "neo_subagent";
-  const subagent = parentSubagent || Boolean(tool.details?.subagent);
   const steps = parentSubagent ? readSubagentSteps(tool.details) : [];
   const tasks = parentSubagent ? readSubagentTasks(tool.details) : [];
   const omitted = parentSubagent ? Number(tool.details?.omittedSteps ?? 0) : 0;
 
   useLayoutEffect(() => {
-    if (!running || !preRef.current) return;
+    if (!open || !preRef.current) return;
     preRef.current.scrollTop = preRef.current.scrollHeight;
-  }, [running, tool.output]);
+  }, [open, tool.output]);
 
   return (
-    <details
-      className={[
-        "tool",
-        tool.isError ? "err" : running ? "run" : "",
-        subagent ? "subagent" : "",
-        compact ? `is-compact is-${kind}` : "",
-      ]
-        .filter(Boolean)
-        .join(" ")}
-      data-tool={tool.name}
-      {...(running ? { open: true } : {})}
-    >
+    <details className={className} data-tool={tool.name} {...(open ? { open: true } : {})}>
       <summary>
         {inline ? null : <span className="tool-chevron" aria-hidden="true" />}
         <span className="tool-name">
-          {running ? <IconSpinner size={12} /> : tool.isError ? <IconError size={12} /> : compact ? null : <ToolStatus tool={tool} />}
-          {compact && kind !== "file" ? null : <IconTool name={tool.name} size={14} />}
+          {open ? <IconSpinner size={12} /> : tool.isError ? <IconError size={12} /> : card ? null : <ToolStatus tool={tool} />}
+          {card && kind !== "file" ? null : <IconTool name={tool.name} size={14} />}
           {label}
         </span>
-        {!compact && preview ? <span className="cmd">{preview}</span> : null}
+        {!card && preview ? <span className="cmd">{preview}</span> : null}
       </summary>
       {tasks.length > 0 ? (
         <ul className="subagent-tasks">
@@ -149,7 +133,7 @@ function ToolCard({ tool, compact = false }: { tool: TranscriptTool; compact?: b
       ) : null}
       {tool.output ? (
         <pre ref={preRef}>{tool.output}</pre>
-      ) : running && !diff && steps.length === 0 ? (
+      ) : open && !diff && steps.length === 0 ? (
         <pre ref={preRef}>执行中…</pre>
       ) : null}
     </details>

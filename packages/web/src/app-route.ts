@@ -89,3 +89,10 @@ export function applyAuthLocation(
   replace(next);
   return next;
 }
+
+/** Logged-in `#/login` / `#/agents` must drop run-detail chrome. Run deep links stay. */
+export function shouldResetRunChrome(authed: boolean, hash: string): boolean {
+  if (!authed) return false;
+  const route = parseAppHash(resolveAuthLocation(authed, hash));
+  return route.kind === "agents" || route.kind === "home";
+}
