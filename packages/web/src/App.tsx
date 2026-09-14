@@ -12,7 +12,7 @@ import { isRemoteControlTarget, type AgentMode, type ImageRef, type Run } from "
 import { isDeskHostedTarget, type Desk, type DeskWorkspace } from "@neo-bot/contracts/desk";
 import { api, hydrateDeskToken, readJson, readToken, writeToken } from "./api";
 import { hasSavedSession } from "./session";
-import { AGENTS_HREF, applyAuthLocation, shouldResetRunChrome } from "./app-route";
+import { AGENTS_HREF, applyAuthLocation, runIdToOpen, shouldResetRunChrome } from "./app-route";
 import { WEB_V1 } from "./scope";
 import { deskBridge, isDeskApp, withApiBase, type DeskTarget } from "./desk";
 import { remoteControlSendLock } from "./desk-live";
@@ -328,12 +328,14 @@ export function App() {
   const openGenRef = useRef(0);
   const listenRef = useRef<(id: string, after?: string | null) => void>(() => undefined);
   const tokenRef = useRef(token);
+  const runIdRef = useRef(runId);
   const sendingRef = useRef(false);
   const pendingRef = useRef<PendingUser | null>(null);
   const keepPendingRef = useRef(false);
   const currentStatusRef = useRef<string | null | undefined>(null);
   const projectNamesRef = useRef(projectNames);
   tokenRef.current = token;
+  runIdRef.current = runId;
   sendingRef.current = sending;
   pendingRef.current = pendingTurn;
   currentStatusRef.current = currentRun?.status;
@@ -1421,13 +1423,20 @@ export function App() {
       }
       setMainTab("chat");
       setInviteToken(null);
+      const nextRunId = runIdToOpen(authed, location.hash);
+      if (nextRunId) {
+        if (nextRunId !== runIdRef.current) {
+          void openRun(nextRunId);
+        }
+        return;
+      }
       if (shouldResetRunChrome(authed, location.hash)) {
         resetComposer();
       }
     };
     window.addEventListener("hashchange", syncHash);
     return () => window.removeEventListener("hashchange", syncHash);
-  }, [resetComposer]);
+  }, [openRun, resetComposer]);
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {

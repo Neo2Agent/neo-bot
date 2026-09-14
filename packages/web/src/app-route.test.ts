@@ -10,6 +10,7 @@ import {
   parseAppHash,
   resolveAuthLocation,
   runHref,
+  runIdToOpen,
   shouldResetRunChrome,
 } from "./app-route.js";
 
@@ -70,5 +71,9 @@ test("logged-in #/login and #/agents reset run-detail chrome; run deep links do 
   assert.equal(shouldResetRunChrome(false, "#/login"), false);
   assert.equal(shouldResetRunChrome(false, "#/agents"), false);
   assert.match(app, /shouldResetRunChrome\(authed, location\.hash\)/);
+  assert.match(app, /runIdToOpen\(authed, location\.hash\)/);
   assert.match(app, /resetComposer\(\)/);
+  assert.equal(runIdToOpen(true, "#/runs/run_9"), "run_9");
+  assert.equal(runIdToOpen(true, "#/login"), null);
+  assert.equal(runIdToOpen(false, "#/runs/run_9"), null);
 });

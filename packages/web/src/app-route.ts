@@ -96,3 +96,8 @@ export function shouldResetRunChrome(authed: boolean, hash: string): boolean {
   const route = parseAppHash(resolveAuthLocation(authed, hash));
   return route.kind === "agents" || route.kind === "home";
 }
+
+export function runIdToOpen(authed: boolean, hash: string): string | null {
+  if (!authed || shouldResetRunChrome(authed, hash)) return null;
+  return parseAppHash(resolveAuthLocation(authed, hash)).runId;
+}
