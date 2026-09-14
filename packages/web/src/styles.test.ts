@@ -122,6 +122,7 @@ test("login wall is a sparse light authenticator column", () => {
   assert.match(authGate, /onMode\("register"\)/);
   assert.match(authGate, /使用服务令牌/);
   assert.match(authGate, /disabled=\{busy\}/);
-  assert.doesNotMatch(authGate, /disabled=\{busy \|\| !canSubmit\}/);
+  assert.match(authGate, /aria-disabled=\{busy \|\| !canSubmit\}/);
+  assert.doesNotMatch(authGate, /^\s*disabled=\{busy \|\| !canSubmit\}/m);
   assert.doesNotMatch(authGate, /value="123456"/);
 });
